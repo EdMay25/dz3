@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TextAnalyzer Pro - Анализ текста и эмоций</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
             margin: 0;
@@ -424,7 +425,16 @@
                 <p id="loadingText">Обработка текста...</p>
             </div>
 
-            <div class="results" id="results">
+            <div class="results" id="results" style="display: flex; flex-wrap: wrap; gap: 20px;">
+            <div style="flex: 1; min-width: 300px;">
+                <div class="result-card">
+                    <div class="result-title">📊 Оценка эмоций</div>
+                    <div style="height: 400px;">
+                        <canvas id="emotionsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div style="flex: 2; min-width: 400px;">
                 <div class="result-card">
                     <div class="result-title">🌍 Переведенный текст</div>
                     <div id="translatedText" style="line-height: 1.6; padding: 15px; background: white; border-radius: 8px;"></div>
@@ -614,10 +624,75 @@
             }
         }
 
+        // Функция для отрисовки диаграммы эмоций
+        function renderEmotionsChart() {
+            const ctx = document.getElementById('emotionsChart').getContext('2d');
+
+            // Определяем цвета для "светофора"
+            const getColorForScore = (score) => {
+                if (score > 0.6) return 'rgba(40, 167, 69, 0.7)'; // Зеленый
+                if (score > 0.3) return 'rgba(255, 193, 7, 0.7)'; // Желтый
+                return 'rgba(220, 53, 69, 0.7)'; // Красный
+            };
+
+            // Подготавливаем данные для диаграммы
+            const labels = analysisResults.emotions.map(e => e.name);
+            const scores = analysisResults.emotions.map(e => e.score);
+            const backgroundColors = analysisResults.emotions.map(e => getColorForScore(e.score));
+
+            // Уничтожаем старую диаграмму, если она существует
+            if (window.emotionsChart) {
+                window.emotionsChart.destroy();
+            }
+
+            // Создаем новую диаграмму
+            window.emotionsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Оценка эмоций (%)',
+                        data: scores,
+                        backgroundColor: backgroundColors,
+                        borderColor: backgroundColors.map(color => color.replace('0.7', '1')),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 1,
+                            ticks: {
+                                callback: function(value) {
+                                    return Math.round(value * 100) + '%';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${Math.round(context.raw * 100)}%`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
         // Отображение результатов
         function displayResults() {
-            document.getElementById('results').style.display = 'block';
+            document.getElementById('results').style.display = 'flex';
             document.getElementById('translatedText').textContent = analysisResults.translatedText;
+            renderEmotionsChart();
             
             const sentiment = analysisResults.sentiment;
             const sentimentBar = document.getElementById('sentimentBar');
