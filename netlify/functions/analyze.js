@@ -163,7 +163,10 @@ exports.handler = async (event, context) => {
 
         // 3. Анализ тональности с Hugging Face
 
-        const HUGGING_FACE_API_KEY = process.env.HUGGING_FACE_API_KEY;
+        console.log('--- Hugging Face Sentiment Analysis ---');
+        console.log('Input text for sentiment analysis:', translatedTextEnglish.substring(0, 100) + '...');
+        console.log('Hugging Face API Key:', HUGGING_FACE_API_KEY ? 'Provided' : 'Not Provided'); // Log if key is provided
+
         const sentimentResponse = await fetch('https://api-inference.huggingface.co/models/cardiffnlp/twitter-xlm-roberta-base-sentiment', {
             method: 'POST',
             headers: {
@@ -172,6 +175,8 @@ exports.handler = async (event, context) => {
             },
             body: JSON.stringify({ inputs: translatedTextEnglish })
         });
+
+        console.log('Hugging Face Request Body:', JSON.stringify({ inputs: translatedTextEnglish }).substring(0, 100) + '...'); // Log truncated body
 
         if (!sentimentResponse.ok) {
             const errorText = await sentimentResponse.text();
@@ -182,7 +187,7 @@ exports.handler = async (event, context) => {
             };
         }
         const sentimentData = await sentimentResponse.json();
-        console.log('Hugging Face Raw Response:', sentimentData);
+        console.log('Hugging Face Raw Response:', JSON.stringify(sentimentData).substring(0, 500) + '...'); // Log raw response, truncated
 
         let sentimentAnalysisEnglish = {
             SentimentClassification: "Neutral", // Default to Neutral
@@ -190,8 +195,10 @@ exports.handler = async (event, context) => {
         };
 
         if (sentimentData && sentimentData.length > 0 && sentimentData[0] && typeof sentimentData[0] === 'object') {
+            console.log('Sentiment data structure:', JSON.stringify(sentimentData[0])); // Log structure of the first element
             const sentiments = sentimentData[0];
             if (Array.isArray(sentiments)) {
+                console.log('Sentiments array:', JSON.stringify(sentiments)); // Log the array of sentiments
                 const topSentiment = sentiments.reduce((prev, current) => {
                     if (typeof current.score === 'number' && current.score > (prev ? prev.score : -Infinity)) {
                         return current;
@@ -200,6 +207,7 @@ exports.handler = async (event, context) => {
                 }, null);
 
                 if (topSentiment && typeof topSentiment.score === 'number') {
+                    console.log('Top sentiment found:', JSON.stringify(topSentiment)); // Log the identified top sentiment
                     const labelMap = {
                         "positive": "Positive",
                         "negative": "Negative",
@@ -220,11 +228,11 @@ exports.handler = async (event, context) => {
         } else {
             console.warn('Hugging Face response is empty or malformed.');
         }
-        console.log('Sentiment Analysis (English):', sentimentAnalysisEnglish);
+        console.log('Sentiment Analysis (English):', JSON.stringify(sentimentAnalysisEnglish)); // Log final sentiment analysis object
 
         // 4. Анализ эмоций с Cloudmersive NLP (имитация на основе тональности)
         const emotionsAnalysisEnglish = generateMockEmotions(sentimentAnalysisEnglish.SentimentClassification);
-        console.log('Emotions Analysis (English - Mock):', emotionsAnalysisEnglish);
+        console.log('Emotions Analysis (English - Mock):', JSON.stringify(emotionsAnalysisEnglish)); // Log mock emotions
 
         // 5. Перевод результатов обратно на целевой язык (targetLanguage)
         let finalTranslatedText = translatedTextEnglish;
@@ -268,7 +276,7 @@ exports.handler = async (event, context) => {
 
         console.log('Final Translated Text:', finalTranslatedText.substring(0, 100) + '...');
         console.log('Final Sentiment Label:', finalSentimentLabel);
-        console.log('Final Emotions Analysis:', finalEmotionsAnalysis);
+        console.log('Final Emotions Analysis:', JSON.stringify(finalEmotionsAnalysis)); // Log final emotions analysis
         console.log('--- Netlify Function End ---');
 
         return {
