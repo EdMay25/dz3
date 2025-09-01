@@ -344,22 +344,22 @@
         <div class="main-card">
             <div class="input-section">
                 <div class="tabs">
-                    <button class="tab active" onclick="switchTab(event, 'text')">📝 Ввод текста</button>
-                    <button class="tab" onclick="switchTab(event, 'file')">📄 Загрузка файла</button>
-                    <button class="tab" onclick="switchTab(event, 'ocr')">📸 OCR сканирование</button>
+                    <button class="tab active" onclick="switchTab(event, 'text')">Ввод текста</button>
+                    <button class="tab" onclick="switchTab(event, 'file')">Загрузка файла</button>
+                    <button class="tab" onclick="switchTab(event, 'ocr')">OCR сканирование</button>
                 </div>
 
                 <div class="tab-content active" id="text-tab">
-                    <textarea 
-                        class="text-input" 
-                        id="textInput" 
+                    <textarea
+                        class="text-input"
+                        id="textInput"
                         placeholder="Введите текст для анализа или вставьте скопированный текст..."
                     ></textarea>
                 </div>
 
                 <div class="tab-content" id="file-tab">
                     <div class="file-upload" onclick="document.getElementById('fileInput').click()">
-                        <div class="upload-icon">📁</div>
+                        <div class="upload-icon">Загрузите файл</div>
                         <h3 id="fileLabel">Загрузите текстовый файл</h3>
                         <p>Поддерживаются форматы: .txt, .docx, .pdf</p>
                         <input type="file" id="fileInput" accept=".txt,.docx,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none" onchange="handleFileUpload(event)">
@@ -371,7 +371,7 @@
                         <div id="imagePreviewContainer" style="display: none; margin-bottom: 15px;">
                             <img id="imagePreview" src="#" alt="Image Preview" style="max-width: 100%; max-height: 150px; border-radius: 8px;">
                         </div>
-                        <div class="upload-icon">📷</div>
+                        <div class="upload-icon">Загрузите изображение</div>
                         <h3 id="imageLabel">Загрузите изображение для OCR</h3>
                         <p>Поддерживаются форматы: .jpg, .png, .gif, .bmp</p>
                         <input type="file" id="imageInput" accept="image/*" style="display:none" onchange="handleOCR(event)">
@@ -416,7 +416,7 @@
                 </div>
 
                 <button class="analyze-btn" id="analyzeBtn" onclick="analyzeText()">
-                    🔍 Анализировать текст
+                    Анализировать текст
                 </button>
             </div>
 
@@ -425,23 +425,21 @@
                 <p id="loadingText">Обработка текста...</p>
             </div>
 
-            <div class="results" id="results" style="display: flex; flex-wrap: wrap; gap: 20px;">
-            <div style="flex: 1; min-width: 300px;">
-                <div class="result-card">
-                    <div class="result-title">📊 Оценка эмоций</div>
-                    <div style="height: 400px;">
-                        <canvas id="emotionsChart"></canvas>
-                    </div>
+            <div class="results" id="results">
+            <div class="result-card">
+                <div class="result-title">Оценка эмоций</div>
+                <div style="height: 400px;">
+                    <canvas id="emotionsChart"></canvas>
                 </div>
             </div>
-            <div style="flex: 2; min-width: 400px;">
+            <div>
                 <div class="result-card">
-                    <div class="result-title">🌍 Переведенный текст</div>
+                    <div class="result-title">Переведенный текст</div>
                     <div id="translatedText" style="line-height: 1.6; padding: 15px; background: white; border-radius: 8px;"></div>
                 </div>
 
                 <div class="result-card">
-                    <div class="result-title">😊 Анализ настроения</div>
+                    <div class="result-title">Анализ настроения</div>
                     <div class="sentiment-score">
                         <span>Негативное</span>
                         <div class="score-bar">
@@ -453,17 +451,17 @@
                 </div>
 
                 <div class="result-card">
-                    <div class="result-title">🎭 Анализ эмоций</div>
+                    <div class="result-title">Анализ эмоций</div>
                     <div class="emotions-grid" id="emotionsGrid"></div>
                 </div>
 
                 <div class="export-section">
-                    <h3 style="text-align: center; margin-bottom: 20px;">💾 Экспорт результатов</h3>
+                    <h3 style="text-align: center; margin-bottom: 20px;">Экспорт результатов</h3>
                     <div class="export-buttons">
-                        <button class="export-btn" onclick="exportTXT()">📄 Скачать TXT</button>
-                        <button class="export-btn" onclick="exportDOCX()">📝 Скачать DOCX</button>
-                        <button class="export-btn" onclick="exportPDF()">📑 Скачать PDF</button>
-                        <button class="export-btn" onclick="copyToClipboard()">📋 Копировать</button>
+                        <button class="export-btn" onclick="exportTXT()">Скачать TXT</button>
+                        <button class="export-btn" onclick="exportDOCX()">Скачать DOCX</button>
+                        <button class="export-btn" onclick="exportPDF()">Скачать PDF</button>
+                        <button class="export-btn" onclick="copyToClipboard()">Копировать</button>
                     </div>
                 </div>
             </div>
