@@ -7,8 +7,8 @@ exports.handler = async (event, context) => {
         return { statusCode: 405, body: 'Method Not Allowed' };
     }
 
-    const CLOUDMERSIVE_API_KEY = 'f24faa9e5f7f2561e7d500f41b16ac42fcfdde6c';
-    const GOOGLE_TRANSLATE_API_KEY = 'AIzaSyCaP0x-TKmedOP9aqYptytLIoSeLIOS21g';
+    const CLOUDMERSIVE_API_KEY = process.env.CLOUDMERSIVE_API_KEY;
+    const GOOGLE_TRANSLATE_API_KEY = process.env.GOOGLE_TRANSLATE_API_KEY;
 
     try {
         let extractedText = '';
