@@ -3,8 +3,3 @@ package = "@netlify/plugin-functions-install-core"
 
 [[plugins]]
 package = "netlify-plugin-html-validate"
-
-  [plugins.inputs]
-    excludedFiles = ["netlify/functions/node_modules/**/*.html"]
-
-  
