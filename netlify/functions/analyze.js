@@ -1,6 +1,7 @@
 const fetch = require('node-fetch');
 const Busboy = require('busboy');
 const { Buffer } = require('buffer');
+const { Storage } = require('@google-cloud/storage');
 
 exports.handler = async (event, context) => {
     if (event.httpMethod !== 'POST') {
@@ -96,24 +97,135 @@ exports.handler = async (event, context) => {
 
                 const ocrResponse = await fetch(ocrEndpoint, {
                     method: 'POST',
-    headers: {
-        'Apikey': CLOUDMERSIVE_API_KEY
-    },
+                    headers: {
+                        'Apikey': CLOUDMERSIVE_API_KEY
+                    },
                     body: formData
                 });
 
                 if (!ocrResponse.ok) {
                     const errorText = await ocrResponse.text();
                     console.error('Cloudmersive OCR/Convert Error:', ocrResponse.status, errorText);
-                    return {
-                        statusCode: ocrResponse.status,
-                        body: JSON.stringify({ message: 'Ошибка при распознавании текста из файла.', details: errorText })
-                    };
+
+                    // Fallback to Google Cloud Vision API for PDF
+                    if (fileMimeType === 'application/pdf') {
+                        console.log('Falling back to Google Cloud Vision API for PDF OCR');
+                        try {
+                            const storage = new Storage();
+                            const bucketName = 'dz3test'; // Replace with your bucket name
+                            const destinationBucketName = 'dz3test'; // Replace with your bucket name
+                            const sourceFileName = `temp_${Date.now()}_${fileName}`;
+                            const destinationFileName = `output_${Date.now()}_${fileName.replace('.pdf', '.json')}`;
+
+                            // Upload file to Google Cloud Storage
+                            const bucket = storage.bucket(bucketName);
+                            const file = bucket.file(sourceFileName);
+                            await file.save(fileBuffer, {
+                                metadata: { contentType: fileMimeType },
+                            });
+
+                            const gcsSourceUri = `gs://${bucketName}/${sourceFileName}`;
+                            const gcsDestinationUri = `gs://${destinationBucketName}/`;
+
+                            // Call Google Cloud Vision API
+                            const visionResponse = await fetch(`https://vision.googleapis.com/v1/files:asyncBatchAnnotate?key=${process.env.GOOGLE_CLOUD_VISION_API_KEY}`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    requests: [
+                                        {
+                                            inputConfig: {
+                                                gcsSource: {
+                                                    uri: gcsSourceUri,
+                                                },
+                                                mimeType: fileMimeType,
+                                            },
+                                            features: [
+                                                {
+                                                    type: 'DOCUMENT_TEXT_DETECTION',
+                                                },
+                                            ],
+                                            outputConfig: {
+                                                gcsDestination: {
+                                                    uri: gcsDestinationUri,
+                                                },
+                                                batchSize: 1,
+                                            },
+                                        },
+                                    ],
+                                }),
+                            });
+
+                            if (!visionResponse.ok) {
+                                const visionErrorText = await visionResponse.text();
+                                console.error('Google Cloud Vision API Error:', visionResponse.status, visionErrorText);
+                                return {
+                                    statusCode: visionResponse.status,
+                                    body: JSON.stringify({ message: 'Ошибка при распознавании текста из файла через Google Cloud Vision API.', details: visionErrorText })
+                                };
+                            }
+
+                            const visionData = await visionResponse.json();
+                            console.log('Google Cloud Vision API Response:', JSON.stringify(visionData));
+
+                            // Wait for the operation to complete and fetch the result
+                            const operationName = visionData.name;
+                            let operationStatusResponse;
+                            let operationStatusData;
+
+                            // Polling for operation completion
+                            let attempts = 0;
+                            const maxAttempts = 10;
+                            const delay = 2000; // 2 seconds
+
+                            while (attempts < maxAttempts) {
+                                operationStatusResponse = await fetch(`https://vision.googleapis.com/v1/${operationName}?key=${process.env.GOOGLE_CLOUD_VISION_API_KEY}`);
+                                operationStatusData = await operationStatusResponse.json();
+
+                                if (operationStatusData.done) {
+                                    break;
+                                }
+
+                                await new Promise(resolve => setTimeout(resolve, delay));
+                                attempts++;
+                            }
+
+                            if (!operationStatusData.done) {
+                                return {
+                                    statusCode: 504,
+                                    body: JSON.stringify({ message: 'Таймаут ожидания завершения операции Google Cloud Vision API.' })
+                                };
+                            }
+
+                            // Fetch the result from Google Cloud Storage
+                            const outputFileName = operationStatusData.response.responses[0].outputConfig.gcsDestination.uri.split('/').pop();
+                            const outputFile = bucket.file(outputFileName);
+                            const [outputFileData] = await outputFile.download();
+
+                            const outputJson = JSON.parse(outputFileData.toString('utf8'));
+                            extractedText = outputJson.responses[0].fullTextAnnotation.text;
+                            console.log('Extracted Text (from Google Cloud Vision API):', extractedText.substring(0, Math.min(extractedText.length, 100)) + '...');
+                        } catch (fallbackError) {
+                            console.error('Fallback to Google Cloud Vision API failed:', fallbackError);
+                            return {
+                                statusCode: 500,
+                                body: JSON.stringify({ message: 'Ошибка при попытке резервного распознавания текста из файла.', details: fallbackError.message })
+                            };
+                        }
+                    } else {
+                        return {
+                            statusCode: ocrResponse.status,
+                            body: JSON.stringify({ message: 'Ошибка при распознавании текста из файла.', details: errorText })
+                        };
+                    }
+                } else {
+                    const ocrData = await ocrResponse.json();
+                    console.log('Cloudmersive OCR/Convert Raw Response:', JSON.stringify(ocrData).substring(0, Math.min(JSON.stringify(ocrData).length, 200)) + '...');
+                    extractedText = ocrData.TextResult || ocrData.TextContent;
+                    console.log('Extracted Text (from OCR/Convert):', extractedText.substring(0, Math.min(extractedText.length, 100)) + '...');
                 }
-                const ocrData = await ocrResponse.json();
-                console.log('Cloudmersive OCR/Convert Raw Response:', JSON.stringify(ocrData).substring(0, Math.min(JSON.stringify(ocrData).length, 200)) + '...');
-                extractedText = ocrData.TextResult || ocrData.TextContent;
-                console.log('Extracted Text (from OCR/Convert):', extractedText.substring(0, Math.min(extractedText.length, 100)) + '...');
             }
         } else if (!fileBuffer && (inputType === 'file' || inputType === 'image')) {
             console.error('Document part is missing for file/image inputType.');
