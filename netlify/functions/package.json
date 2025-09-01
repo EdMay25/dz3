@@ -1,0 +1,16 @@
+{
+  "name": "netlify-functions",
+  "version": "1.0.0",
+  "description": "Netlify functions for TextAnalyzer Pro",
+  "main": "analyze.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "node-fetch": "^2.6.1",
+    "form-data": "^4.0.0"
+  }
+}
