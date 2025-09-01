@@ -141,6 +141,10 @@ exports.handler = async (event, context) => {
         console.log('Text before Google Translate (English target):', extractedText.substring(0, 100) + '...');
 
         // 2. Перевод текста с Google Translate
+        console.log('Starting Google Translate API call...');
+        console.log('Google Translate API Key available:', !!GOOGLE_TRANSLATE_API_KEY);
+        console.log('Text to translate (first 100 chars):', extractedText.substring(0, 100) + '...');
+
         const translateResponse = await fetch(`https://translation.googleapis.com/language/translate/v2?key=${GOOGLE_TRANSLATE_API_KEY}`, {
             method: 'POST',
             headers: {
@@ -156,14 +160,56 @@ exports.handler = async (event, context) => {
         if (!translateResponse.ok) {
             const errorData = await translateResponse.json();
             console.error('Google Translate Error:', translateResponse.status, JSON.stringify(errorData));
+
+            // Улучшенная обработка ошибок перевода
+            let errorMessage = 'Ошибка при переводе текста.';
+            if (errorData.error && errorData.error.message) {
+                errorMessage += ` Детали: ${errorData.error.message}`;
+
+                // Если ошибка связана с API ключом
+                if (errorData.error.message.includes('API key') ||
+                    errorData.error.message.includes('invalid') ||
+                    errorData.error.message.includes('authentication')) {
+                    errorMessage += '. Проверьте наличие и корректность GOOGLE_TRANSLATE_API_KEY.';
+                    console.error('Google Translate API Key Issue:', errorData.error.message);
+                }
+            }
+
+            // Возвращаем оригинальный текст, если перевод не удался
             return {
-                statusCode: translateResponse.status,
-                body: JSON.stringify({ message: 'Ошибка при переводе текста.', details: errorData.error ? errorData.error.message : JSON.stringify(errorData) })
+                statusCode: 200, // Возвращаем 200, чтобы клиент получил ответ
+                body: JSON.stringify({
+                    extractedText: extractedText,
+                    translatedText: "Текст не был переведен. " + errorMessage,
+                    sentimentAnalysis: {
+                        SentimentClassification: "Neutral",
+                        SentimentScore: 0
+                    },
+                    emotionsAnalysis: []
+                })
             };
         }
+
         const translateData = await translateResponse.json();
         const translatedTextEnglish = translateData.data.translations[0].translatedText;
         console.log('Translated Text (English):', translatedTextEnglish.substring(0, 100) + '...');
+
+        // Проверка на пустой переведенный текст
+        if (!translatedTextEnglish || translatedTextEnglish.trim() === '') {
+            console.error('WARNING: Google Translate returned empty text!');
+            return {
+                statusCode: 200,
+                body: JSON.stringify({
+                    extractedText: extractedText,
+                    translatedText: "Текст не был переведен. Google Translate вернул пустой результат.",
+                    sentimentAnalysis: {
+                        SentimentClassification: "Neutral",
+                        SentimentScore: 0
+                    },
+                    emotionsAnalysis: []
+                })
+            };
+        }
 
 
         // 3. Анализ тональности с Hugging Face

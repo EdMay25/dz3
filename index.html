@@ -531,7 +531,7 @@
             const imageInput = document.getElementById('imageInput');
             const sourceLanguage = document.getElementById('sourceLanguage').value;
             const targetLanguage = document.getElementById('targetLanguage').value;
-            
+
             let inputData = null;
             let inputType = '';
 
@@ -565,6 +565,17 @@
             document.getElementById('analyzeBtn').disabled = true;
             updateLoadingText('Отправка данных на сервер...');
 
+            // Добавляем логирование входных данных для отладки
+            console.log('DEBUG: Input Type:', inputType);
+            console.log('DEBUG: Source Language:', sourceLanguage);
+            console.log('DEBUG: Target Language:', targetLanguage);
+            if (inputType === 'text') {
+                console.log('DEBUG: Input Text (first 100 chars):', inputData.substring(0, 100));
+            } else if (inputType === 'file' || inputType === 'image') {
+                console.log('DEBUG: File Name:', inputData.name);
+                console.log('DEBUG: File Type:', inputData.type);
+            }
+
             try {
                 const formData = new FormData();
                 formData.append('sourceLanguage', sourceLanguage);
@@ -595,9 +606,16 @@
 
                 const data = await response.json();
 
-                // Логирование ответа сервера для отладки
+                // Расширенное логирование ответа сервера для отладки
                 console.log('Server Response Data:', data);
                 console.log('Translated Text from Server:', data.translatedText);
+                console.log('Translated Text Length:', data.translatedText ? data.translatedText.length : 0);
+
+                // Проверка на пустой переведенный текст
+                if (!data.translatedText || data.translatedText.trim() === '') {
+                    console.error('WARNING: Server returned empty translated text!');
+                    data.translatedText = "Текст не был переведен. Возникла ошибка при переводе.";
+                }
 
                 analysisResults.originalText = data.extractedText || (typeof inputData === 'string' ? inputData : inputData.name);
                 analysisResults.translatedText = data.translatedText;
