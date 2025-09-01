@@ -343,16 +343,16 @@
             .header h1 {
                 font-size: 2rem;
             }
-            
+
             .main-card {
                 margin: 10px;
                 padding: 20px;
             }
-            
+
             .tabs {
                 flex-direction: column;
             }
-            
+
             .export-buttons {
                 flex-direction: column;
             }
@@ -387,7 +387,7 @@
                         <div class="upload-icon">Загрузите файл</div>
                         <h3 id="fileLabel">Загрузите текстовый файл</h3>
                         <p>Поддерживаются форматы: .txt, .docx, .pdf</p>
-                        <input type="file" id="fileInput" accept=".txt,.docx,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="hidden-file-input" onchange="handleFileUpload(event)">
+                        <input type="file" id="fileInput" accept=".txt, .docx, .pdf, application/pdf, application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="hidden-file-input" onchange="handleFileUpload(event)">
                     </div>
                 </div>
 
@@ -451,42 +451,43 @@
             </div>
 
             <div class="results" id="results">
-            <div class="result-card">
-                <div class="result-title">Оценка эмоций</div>
+                <div class="result-card">
+                    <div class="result-title">Оценка эмоций</div>
                     <div class="chart-container">
-                    <canvas id="emotionsChart"></canvas>
-                </div>
-            </div>
-            <div>
-                <div class="result-card">
-                    <div class="result-title">Переведенный текст</div>
-                    <div id="translatedText" class="translated-text"></div>
-                </div>
-
-                <div class="result-card">
-                    <div class="result-title">Анализ настроения</div>
-                    <div class="sentiment-score">
-                        <span>Негативное</span>
-                        <div class="score-bar">
-                            <div class="score-fill" id="sentimentBar"></div>
-                        </div>
-                        <span>Позитивное</span>
+                        <canvas id="emotionsChart"></canvas>
                     </div>
-                    <div id="sentimentDetails"></div>
                 </div>
+                <div>
+                    <div class="result-card">
+                        <div class="result-title">Переведенный текст</div>
+                        <div id="translatedText" class="translated-text"></div>
+                    </div>
 
-                <div class="result-card">
-                    <div class="result-title">Анализ эмоций</div>
-                    <div id="emotionsTextList"></div>
-                </div>
+                    <div class="result-card">
+                        <div class="result-title">Анализ настроения</div>
+                        <div class="sentiment-score">
+                            <span>Негативное</span>
+                            <div class="score-bar">
+                                <div class="score-fill" id="sentimentBar"></div>
+                            </div>
+                            <span>Позитивное</span>
+                        </div>
+                        <div id="sentimentDetails"></div>
+                    </div>
 
-                <div class="export-section">
-                    <h3 class="export-title">Экспорт результатов</h3>
-                    <div class="export-buttons">
-                        <button type="button" class="export-btn" onclick="exportTXT()">Скачать TXT</button>
-                        <button type="button" class="export-btn" onclick="exportDOCX()">Скачать DOCX</button>
-                        <button type="button" class="export-btn" onclick="exportPDF()">Скачать PDF</button>
-                        <button type="button" class="export-btn" onclick="copyToClipboard()">Копировать</button>
+                    <div class="result-card">
+                        <div class="result-title">Анализ эмоций</div>
+                        <div id="emotionsTextList"></div>
+                    </div>
+
+                    <div class="export-section">
+                        <h3 class="export-title">Экспорт результатов</h3>
+                        <div class="export-buttons">
+                            <button type="button" class="export-btn" onclick="exportTXT()">Скачать TXT</button>
+                            <button type="button" class="export-btn" onclick="exportDOCX()">Скачать DOCX</button>
+                            <button type="button" class="export-btn" onclick="exportPDF()">Скачать PDF</button>
+                            <button type="button" class="export-btn" onclick="copyToClipboard()">Копировать</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -507,7 +508,7 @@
             // Убираем активный класс со всех табов и контента
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
-            
+
             // Активируем нужный таб и контент
             event.currentTarget.classList.add('active');
             document.getElementById(tabName + '-tab').style.display = 'block';
@@ -550,7 +551,7 @@
                 document.getElementById('imageLabel').textContent = `Выбрано изображение: ${file.name}`;
             }
             reader.readAsDataURL(file);
-            
+
             // Очищаем текстовое поле, если там что-то было
             document.getElementById('textInput').value = '';
         }
@@ -659,7 +660,7 @@
                 }
 
                 displayResults();
-                
+
             } catch (error) {
                 console.error('Analysis Error:', error);
                 showNotification(`Ошибка при анализе: ${error.message}`, 'error');
@@ -798,14 +799,14 @@
         function exportPDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-            
+
             // Установка шрифта, поддерживающего кириллицу
             doc.addFont('https://fonts.gstatic.com/s/roboto/v27/KFOmCnqEu92Fr1Mu4mxP.ttf', 'Roboto', 'normal');
             doc.setFont('Roboto');
 
             doc.setFontSize(20);
             doc.text('Результаты анализа текста', 20, 30);
-            
+
             let yPos = 45;
 
             function addSection(title, text) {
@@ -829,7 +830,7 @@
                 doc.addPage();
                 yPos = 20;
             }
-            
+
             doc.setFontSize(14);
             doc.text('Анализ настроения:', 20, yPos);
             yPos += 8;
@@ -873,13 +874,13 @@
         function formatExportContent() {
             let content = 'РЕЗУЛЬТАТЫ АНАЛИЗА ТЕКСТА\n';
             content += '='.repeat(50) + '\n\n';
-            
+
             content += 'ОРИГИНАЛЬНЫЙ ТЕКСТ:\n';
             content += analysisResults.originalText + '\n\n';
-            
+
             content += 'ПЕРЕВЕДЕННЫЙ ТЕКСТ:\n';
             content += analysisResults.translatedText + '\n\n';
-            
+
             content += 'АНАЛИЗ НАСТРОЕНИЯ:\n';
             // Исправлено: SentimentClassification и SentimentScore
             content += `Оценка: ${analysisResults.sentiment.SentimentClassification}\n`;
@@ -887,7 +888,7 @@
             if (analysisResults.sentiment.magnitude) {
                 content += `Интенсивность: ${analysisResults.sentiment.magnitude.toFixed(2)}\n\n`;
             }
-            
+
             content += 'АНАЛИЗ ЭМОЦИЙ:\n';
             if(analysisResults.emotions && analysisResults.emotions.length > 0) {
                 analysisResults.emotions.forEach(emotion => {
@@ -896,10 +897,10 @@
             } else {
                 content += 'Нет данных.\n';
             }
-            
+
             content += '\n\nСгенерировано: TextAnalyzer Pro\n';
             content += 'Дата: ' + new Date().toLocaleString('ru-RU');
-            
+
             return content;
         }
 
