@@ -263,6 +263,37 @@
             color: #667eea;
         }
 
+        .image-preview-container {
+            display: none;
+            margin-bottom: 15px;
+        }
+
+        .image-preview {
+            max-width: 100%;
+            max-height: 150px;
+            border-radius: 8px;
+        }
+
+        .translated-text {
+            line-height: 1.6;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .export-title {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .chart-container {
+            height: 400px;
+        }
+
+        .hidden-file-input {
+            display: none;
+        }
+
         .export-section {
             margin-top: 30px;
             padding-top: 20px;
@@ -338,9 +369,9 @@
         <div class="main-card">
             <div class="input-section">
                 <div class="tabs">
-                    <button class="tab active" onclick="switchTab(event, 'text')">Ввод текста</button>
-                    <button class="tab" onclick="switchTab(event, 'file')">Загрузка файла</button>
-                    <button class="tab" onclick="switchTab(event, 'ocr')">OCR сканирование</button>
+                    <button type="button" class="tab active" onclick="switchTab(event, 'text')">Ввод текста</button>
+                    <button type="button" class="tab" onclick="switchTab(event, 'file')">Загрузка файла</button>
+                    <button type="button" class="tab" onclick="switchTab(event, 'ocr')">OCR сканирование</button>
                 </div>
 
                 <div class="tab-content active" id="text-tab">
@@ -356,21 +387,21 @@
                         <div class="upload-icon">Загрузите файл</div>
                         <h3 id="fileLabel">Загрузите текстовый файл</h3>
                         <p>Поддерживаются форматы: .txt, .docx, .pdf</p>
-                        <input type="file" id="fileInput" accept=".txt,.docx,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none" onchange="handleFileUpload(event)">
+                        <input type="file" id="fileInput" accept=".txt,.docx,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="hidden-file-input" onchange="handleFileUpload(event)">
                     </div>
                 </div>
 
                 <div class="tab-content" id="ocr-tab">
                     <div class="file-upload" onclick="document.getElementById('imageInput').click()">
-                        <div id="imagePreviewContainer" style="display: none; margin-bottom: 15px;">
-                            <img id="imagePreview" src="#" alt="Image Preview" style="max-width: 100%; max-height: 150px; border-radius: 8px;">
+                        <div id="imagePreviewContainer" class="image-preview-container">
+                            <img id="imagePreview" class="image-preview" src="#" alt="Image Preview">
                         </div>
                         <div class="upload-icon">Загрузите изображение</div>
                         <h3 id="imageLabel">Загрузите изображение для OCR</h3>
                         <p>Поддерживаются форматы: .jpg, .png, .gif, .bmp</p>
-                        <input type="file" id="imageInput" accept="image/*" style="display:none" onchange="handleOCR(event)">
+                        <input type="file" id="imageInput" accept="image/*" class="hidden-file-input" onchange="handleOCR(event)">
                     </div>
-                    <div class="progress-bar" id="ocrProgress" style="display:none">
+                    <div class="progress-bar" id="ocrProgress">
                         <div class="progress-fill" id="ocrProgressFill"></div>
                     </div>
                 </div>
@@ -409,7 +440,7 @@
                     </select>
                 </div>
 
-                <button class="analyze-btn" id="analyzeBtn" onclick="analyzeText()">
+                <button type="button" class="analyze-btn" id="analyzeBtn" onclick="analyzeText()">
                     Анализировать текст
                 </button>
             </div>
@@ -422,14 +453,14 @@
             <div class="results" id="results">
             <div class="result-card">
                 <div class="result-title">Оценка эмоций</div>
-                <div style="height: 400px;">
+                    <div class="chart-container">
                     <canvas id="emotionsChart"></canvas>
                 </div>
             </div>
             <div>
                 <div class="result-card">
                     <div class="result-title">Переведенный текст</div>
-                    <div id="translatedText" style="line-height: 1.6; padding: 15px; background: white; border-radius: 8px;"></div>
+                    <div id="translatedText" class="translated-text"></div>
                 </div>
 
                 <div class="result-card">
@@ -450,12 +481,12 @@
                 </div>
 
                 <div class="export-section">
-                    <h3 style="text-align: center; margin-bottom: 20px;">Экспорт результатов</h3>
+                    <h3 class="export-title">Экспорт результатов</h3>
                     <div class="export-buttons">
-                        <button class="export-btn" onclick="exportTXT()">Скачать TXT</button>
-                        <button class="export-btn" onclick="exportDOCX()">Скачать DOCX</button>
-                        <button class="export-btn" onclick="exportPDF()">Скачать PDF</button>
-                        <button class="export-btn" onclick="copyToClipboard()">Копировать</button>
+                        <button type="button" class="export-btn" onclick="exportTXT()">Скачать TXT</button>
+                        <button type="button" class="export-btn" onclick="exportDOCX()">Скачать DOCX</button>
+                        <button type="button" class="export-btn" onclick="exportPDF()">Скачать PDF</button>
+                        <button type="button" class="export-btn" onclick="copyToClipboard()">Копировать</button>
                     </div>
                 </div>
             </div>
