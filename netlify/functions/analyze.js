@@ -1,5 +1,5 @@
 const fetch = require('node-fetch');
-const FormData = require('form-data');
+const Busboy = require('busboy');
 const { Buffer } = require('buffer');
 
 exports.handler = async (event, context) => {
@@ -15,6 +15,9 @@ exports.handler = async (event, context) => {
         let sourceLanguage = 'auto';
         let targetLanguage = 'ru';
         let inputType = '';
+        let fileBuffer = null;
+        let fileName = '';
+        let fileMimeType = '';
 
         console.log('--- Netlify Function Start ---');
         console.log('Event HTTP Method:', event.httpMethod);
@@ -22,98 +25,104 @@ exports.handler = async (event, context) => {
         console.log('Event isBase64Encoded:', event.isBase64Encoded);
 
         const contentType = event.headers['content-type'];
-        let requestBody = event.body;
-
-        if (event.isBase64Encoded) {
-            requestBody = Buffer.from(requestBody, 'base64').toString('binary');
-        }
-
-        if (contentType && contentType.includes('multipart/form-data')) {
-            const boundary = contentType.split('; ')[1].split('=')[1];
-            const parts = parseMultipartForm(requestBody, boundary);
-
-            const textPart = parts.find(p => p.name === 'text');
-            const documentPart = parts.find(p => p.name === 'document');
-            const sourceLangPart = parts.find(p => p.name === 'sourceLanguage');
-            const targetLangPart = parts.find(p => p.name === 'targetLanguage');
-            const inputTypePart = parts.find(p => p.name === 'inputType');
-
-            if (sourceLangPart) sourceLanguage = sourceLangPart.data;
-            if (targetLangPart) targetLanguage = targetLangPart.data;
-            if (inputTypePart) inputType = inputTypePart.data;
-
-            console.log('Parsed inputType:', inputType);
-            console.log('Parsed sourceLanguage:', sourceLanguage);
-            console.log('Parsed targetLanguage:', targetLanguage);
-            console.log('Text part present:', !!textPart);
-            console.log('Document part present:', !!documentPart);
-
-            if (inputType === 'text' && textPart) {
-                extractedText = textPart.data;
-                console.log('Extracted Text (from text input):', extractedText.substring(0, Math.min(extractedText.length, 100)) + '...');
-            } else if ((inputType === 'file' || inputType === 'image') && documentPart) {
-                const fileBuffer = Buffer.from(documentPart.data, 'binary');
-                const fileName = documentPart.filename || 'document';
-                const fileMimeType = documentPart['Content-Type'] || 'application/octet-stream';
-                console.log('File Name:', fileName);
-                console.log('File MIME Type:', fileMimeType);
-
-                let ocrEndpoint = '';
-                if (fileMimeType.startsWith('image/')) {
-                    ocrEndpoint = 'https://api.cloudmersive.com/ocr/image/toText';
-                } else if (fileMimeType === 'application/pdf') {
-                    ocrEndpoint = 'https://api.cloudmersive.com/ocr/pdf/toText';
-                } else if (fileMimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-                    ocrEndpoint = 'https://api.cloudmersive.com/convert/docx/to/txt';
-                } else if (fileMimeType === 'text/plain') {
-                    extractedText = fileBuffer.toString('utf8');
-                    console.log('Extracted Text (from text/plain file):', extractedText.substring(0, Math.min(extractedText.length, 100)) + '...');
-                } else {
-                    console.error('Unsupported file type for OCR/conversion:', fileMimeType);
-                    return { statusCode: 400, body: JSON.stringify({ message: 'Неподдерживаемый тип файла для OCR/конвертации.' }) };
-                }
-
-                if (ocrEndpoint) {
-                    console.log('OCR Endpoint:', ocrEndpoint);
-                    const ocrFormData = new FormData();
-                    ocrFormData.append('inputFile', fileBuffer, {
-                        filename: fileName,
-                        contentType: fileMimeType
-                    });
-
-                    const ocrResponse = await fetch(ocrEndpoint, {
-                        method: 'POST',
-                        headers: {
-                            'Apikey': CLOUDMERSIVE_API_KEY,
-                            ...ocrFormData.getHeaders()
-                        },
-                        body: ocrFormData
-                    });
-
-                    if (!ocrResponse.ok) {
-                        const errorText = await ocrResponse.text();
-                        console.error('Cloudmersive OCR/Convert Error:', ocrResponse.status, errorText);
-                        return {
-                            statusCode: ocrResponse.status,
-                            body: JSON.stringify({ message: 'Ошибка при распознавании текста из файла.', details: errorText })
-                        };
-                    }
-                    const ocrData = await ocrResponse.json();
-                    console.log('Cloudmersive OCR/Convert Raw Response:', JSON.stringify(ocrData).substring(0, Math.min(JSON.stringify(ocrData).length, 200)) + '...');
-                    extractedText = ocrData.TextResult || ocrData.TextContent;
-                    console.log('Extracted Text (from OCR/Convert):', extractedText.substring(0, Math.min(extractedText.length, 100)) + '...');
-                }
-            } else if (!documentPart && (inputType === 'file' || inputType === 'image')) {
-                console.error('Document part is missing for file/image inputType.');
-                return { statusCode: 400, body: JSON.stringify({ message: 'Файл документа отсутствует во входных данных.' }) };
-            } else if (!textPart && inputType === 'text') {
-                console.error('Text part is missing for text inputType.');
-                return { statusCode: 400, body: JSON.stringify({ message: 'Текстовые данные отсутствуют во входных данных.' }) };
-            }
-        } else {
+        if (!contentType || !contentType.includes('multipart/form-data')) {
             console.error('Invalid Content-Type. Expected multipart/form-data.');
             return { statusCode: 400, body: 'Invalid Content-Type. Expected multipart/form-data.' };
         }
+
+        await new Promise((resolve, reject) => {
+            const busboy = Busboy({ headers: event.headers });
+
+            busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
+                console.log(`File [${fieldname}]: filename=${filename}, mimetype=${mimetype}`);
+                const chunks = [];
+                file.on('data', data => chunks.push(data));
+                file.on('end', () => {
+                    fileBuffer = Buffer.concat(chunks);
+                    fileName = filename;
+                    fileMimeType = mimetype;
+                });
+            });
+
+            busboy.on('field', (fieldname, val, fieldnameTruncated, valTruncated, encoding, mimetype) => {
+                console.log(`Field [${fieldname}]: value: ${val}`);
+                if (fieldname === 'sourceLanguage') sourceLanguage = val;
+                if (fieldname === 'targetLanguage') targetLanguage = val;
+                if (fieldname === 'inputType') inputType = val;
+                if (fieldname === 'text') extractedText = val;
+            });
+
+            busboy.on('finish', resolve);
+            busboy.on('error', reject);
+
+            if (event.isBase64Encoded) {
+                busboy.end(Buffer.from(event.body, 'base64'));
+            } else {
+                busboy.end(event.body);
+            }
+        });
+
+        console.log('Parsed inputType:', inputType);
+        console.log('Parsed sourceLanguage:', sourceLanguage);
+        console.log('Parsed targetLanguage:', targetLanguage);
+        console.log('Extracted Text (from text input):', extractedText.substring(0, Math.min(extractedText.length, 100)) + '...');
+        console.log('File Name:', fileName);
+        console.log('File MIME Type:', fileMimeType);
+
+        if ((inputType === 'file' || inputType === 'image') && fileBuffer) {
+            let ocrEndpoint = '';
+            if (fileMimeType.startsWith('image/')) {
+                ocrEndpoint = 'https://api.cloudmersive.com/ocr/image/toText';
+            } else if (fileMimeType === 'application/pdf') {
+                ocrEndpoint = 'https://api.cloudmersive.com/ocr/pdf/toText';
+            } else if (fileMimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+                ocrEndpoint = 'https://api.cloudmersive.com/convert/docx/to/txt';
+            } else if (fileMimeType === 'text/plain') {
+                extractedText = fileBuffer.toString('utf8');
+                console.log('Extracted Text (from text/plain file):', extractedText.substring(0, Math.min(extractedText.length, 100)) + '...');
+            } else {
+                console.error('Unsupported file type for OCR/conversion:', fileMimeType);
+                return { statusCode: 400, body: JSON.stringify({ message: 'Неподдерживаемый тип файла для OCR/конвертации.' }) };
+            }
+
+            if (ocrEndpoint) {
+                console.log('OCR Endpoint:', ocrEndpoint);
+                const formData = new FormData();
+                formData.append('inputFile', fileBuffer, {
+                    filename: fileName,
+                    contentType: fileMimeType
+                });
+
+                const ocrResponse = await fetch(ocrEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Apikey': CLOUDMERSIVE_API_KEY,
+                        ...formData.getHeaders()
+                    },
+                    body: formData
+                });
+
+                if (!ocrResponse.ok) {
+                    const errorText = await ocrResponse.text();
+                    console.error('Cloudmersive OCR/Convert Error:', ocrResponse.status, errorText);
+                    return {
+                        statusCode: ocrResponse.status,
+                        body: JSON.stringify({ message: 'Ошибка при распознавании текста из файла.', details: errorText })
+                    };
+                }
+                const ocrData = await ocrResponse.json();
+                console.log('Cloudmersive OCR/Convert Raw Response:', JSON.stringify(ocrData).substring(0, Math.min(JSON.stringify(ocrData).length, 200)) + '...');
+                extractedText = ocrData.TextResult || ocrData.TextContent;
+                console.log('Extracted Text (from OCR/Convert):', extractedText.substring(0, Math.min(extractedText.length, 100)) + '...');
+            }
+        } else if (!fileBuffer && (inputType === 'file' || inputType === 'image')) {
+            console.error('Document part is missing for file/image inputType.');
+            return { statusCode: 400, body: JSON.stringify({ message: 'Файл документа отсутствует во входных данных.' }) };
+        } else if (!extractedText && inputType === 'text') {
+            console.error('Text part is missing for text inputType.');
+            return { statusCode: 400, body: JSON.stringify({ message: 'Текстовые данные отсутствуют во входных данных.' }) };
+        }
+
 
         if (!extractedText || extractedText.trim() === '') {
             console.error('Extracted text is empty or null AFTER all processing steps.');
@@ -242,48 +251,6 @@ exports.handler = async (event, context) => {
         };
     }
 };
-
-// Вспомогательная функция для парсинга multipart/form-data
-function parseMultipartForm(body, boundary) {
-    const parts = [];
-    const lines = body.split(new RegExp(`--${boundary}(?:--)?\r?\n`));
-
-    for (const line of lines) {
-        if (!line.trim()) continue;
-
-        const headerEnd = line.indexOf('\r\n\r\n');
-        if (headerEnd === -1) continue;
-
-        const headersRaw = line.substring(0, headerEnd);
-        const data = line.substring(headerEnd + 4);
-
-        const part = {};
-        headersRaw.split('\r\n').forEach(headerLine => {
-            const headerParts = headerLine.split(': ');
-            const key = headerParts.shift(); // Извлекаем первый элемент как ключ
-            const value = headerParts.join(': '); // Остальное - значение (может содержать двоеточия)
-
-            if (key && value) {
-                const lowerKey = key.toLowerCase();
-                if (lowerKey === 'content-disposition') {
-                    value.split('; ').forEach(dispositionPart => {
-                        const dispositionKeyValue = dispositionPart.split('=');
-                        if (dispositionKeyValue.length === 2) {
-                            const dispositionKey = dispositionKeyValue[0].trim();
-                            const dispositionValue = dispositionKeyValue[1].replace(/"/g, '');
-                            part[dispositionKey] = dispositionValue;
-                        }
-                    });
-                } else {
-                    part[key.trim()] = value.trim();
-                }
-            }
-        });
-        part.data = data;
-        parts.push(part);
-    }
-    return parts;
-}
 
 // Вспомогательная функция для генерации имитации эмоций на основе тональности
 function generateMockEmotions(sentimentLabel) {
