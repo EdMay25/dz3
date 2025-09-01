@@ -388,6 +388,11 @@ exports.handler = async (event, context) => {
         console.log('Final Translated Text:', finalTranslatedText.substring(0, 100) + '...');
         console.log('Final Sentiment Label:', finalSentimentLabel);
         console.log('Final Emotions Analysis:', JSON.stringify(finalEmotionsAnalysis)); // Log final emotions analysis
+
+        // Дополнительное логирование для проверки переведенного текста
+        console.log('DEBUG: Translated Text Length:', finalTranslatedText.length);
+        console.log('DEBUG: Translated Text (First 200 chars):', finalTranslatedText.substring(0, 200));
+
         console.log('--- Netlify Function End ---');
 
         return {

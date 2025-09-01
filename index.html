@@ -594,7 +594,11 @@
                 }
 
                 const data = await response.json();
-                
+
+                // Логирование ответа сервера для отладки
+                console.log('Server Response Data:', data);
+                console.log('Translated Text from Server:', data.translatedText);
+
                 analysisResults.originalText = data.extractedText || (typeof inputData === 'string' ? inputData : inputData.name);
                 analysisResults.translatedText = data.translatedText;
                 analysisResults.sentiment = data.sentimentAnalysis;
