@@ -239,34 +239,28 @@
         .neutral { background: linear-gradient(90deg, #ffc107, #fd7e14); }
         .negative { background: linear-gradient(90deg, #dc3545, #e83e8c); }
 
-        .emotions-grid {
+        .emotions-percentages {
+            margin-top: 15px;
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
+            gap: 10px;
         }
 
-        .emotion-item {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        .emotion-emoji {
-            font-size: 2rem;
-            margin-bottom: 8px;
+        .emotion-percentage-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
         }
 
         .emotion-name {
-            font-weight: 600;
-            margin-bottom: 5px;
+            font-weight: 500;
+            color: #495057;
         }
 
-        .emotion-score {
+        .emotion-value {
+            font-weight: 600;
             color: #667eea;
-            font-weight: 500;
         }
 
         .export-section {
@@ -452,7 +446,7 @@
 
                 <div class="result-card">
                     <div class="result-title">Анализ эмоций</div>
-                    <div class="emotions-grid" id="emotionsGrid"></div>
+                    <div id="emotionsTextList"></div>
                 </div>
 
                 <div class="export-section">
@@ -691,19 +685,19 @@
             document.getElementById('results').style.display = 'flex';
             document.getElementById('translatedText').textContent = analysisResults.translatedText;
             renderEmotionsChart();
-            
+
             const sentiment = analysisResults.sentiment;
             const sentimentBar = document.getElementById('sentimentBar');
             const sentimentDetails = document.getElementById('sentimentDetails');
-            
+
             // Backend возвращает SentimentScore, а не score.
             const score = sentiment.SentimentScore || 0;
             const magnitude = sentiment.magnitude || 0; // На случай если magnitude нет
-            
+
             // Преобразуем [-1, 1] в [0, 100]
             const scorePercent = (score + 1) / 2 * 100;
             sentimentBar.style.width = `${scorePercent}%`;
-            
+
             sentimentBar.className = 'score-fill'; // Сбрасываем классы
             if (sentiment.SentimentClassification.toLowerCase().includes('positive')) {
                 sentimentBar.classList.add('positive');
@@ -712,28 +706,32 @@
             } else {
                 sentimentBar.classList.add('neutral');
             }
-            
+
             sentimentDetails.innerHTML = `
                 <p><strong>Общая оценка:</strong> ${sentiment.SentimentClassification}</p>
                 <p><strong>Показатель:</strong> ${score.toFixed(2)} (от -1 до 1)</p>
                 ${magnitude ? `<p><strong>Интенсивность:</strong> ${magnitude.toFixed(2)}</p>` : ''}
             `;
-            
-            const emotionsGrid = document.getElementById('emotionsGrid');
+
+            // Отображение процентов эмоций в текстовом формате
+            const emotionsTextList = document.getElementById('emotionsTextList');
             if(analysisResults.emotions && analysisResults.emotions.length > 0) {
-                emotionsGrid.innerHTML = analysisResults.emotions
-                    .slice(0, 6)
-                    .map(emotion => `
-                        <div class="emotion-item">
-                            <div class="emotion-emoji">${emotion.emoji}</div>
-                            <div class="emotion-name">${emotion.name}</div>
-                            <div class="emotion-score">${Math.round(emotion.score * 100)}%</div>
-                        </div>
-                    `).join('');
+                emotionsTextList.innerHTML = `
+                    <div class="emotions-percentages">
+                        ${analysisResults.emotions
+                            .slice(0, 6)
+                            .map(emotion => `
+                                <div class="emotion-percentage-item">
+                                    <span class="emotion-name">${emotion.name}:</span>
+                                    <span class="emotion-value">${Math.round(emotion.score * 100)}%</span>
+                                </div>
+                            `).join('')}
+                    </div>
+                `;
             } else {
-                emotionsGrid.innerHTML = '<p>Анализ эмоций не дал результатов.</p>';
+                emotionsTextList.innerHTML = '<p>Анализ эмоций не дал результатов.</p>';
             }
-                
+
             document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
         }
 
