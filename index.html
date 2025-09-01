@@ -639,7 +639,7 @@
             const backgroundColors = analysisResults.emotions.map(e => getColorForScore(e.score));
 
             // Уничтожаем старую диаграмму, если она существует
-            if (window.emotionsChart) {
+            if (window.emotionsChart && typeof window.emotionsChart.destroy === 'function') {
                 window.emotionsChart.destroy();
             }
 
