@@ -343,9 +343,9 @@
         <div class="main-card">
             <div class="input-section">
                 <div class="tabs">
-                    <button class="tab active" onclick="switchTab('text')">📝 Ввод текста</button>
-                    <button class="tab" onclick="switchTab('file')">📄 Загрузка файла</button>
-                    <button class="tab" onclick="switchTab('ocr')">📸 OCR сканирование</button>
+                    <button class="tab active" onclick="switchTab(event, 'text')">📝 Ввод текста</button>
+                    <button class="tab" onclick="switchTab(event, 'file')">📄 Загрузка файла</button>
+                    <button class="tab" onclick="switchTab(event, 'ocr')">📸 OCR сканирование</button>
                 </div>
 
                 <div class="tab-content active" id="text-tab">
@@ -359,16 +359,19 @@
                 <div class="tab-content" id="file-tab">
                     <div class="file-upload" onclick="document.getElementById('fileInput').click()">
                         <div class="upload-icon">📁</div>
-                        <h3>Загрузите текстовый файл</h3>
+                        <h3 id="fileLabel">Загрузите текстовый файл</h3>
                         <p>Поддерживаются форматы: .txt, .docx, .pdf</p>
-                        <input type="file" id="fileInput" accept=".txt,.docx,.pdf" style="display:none" onchange="handleFileUpload(event)">
+                        <input type="file" id="fileInput" accept=".txt,.docx,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none" onchange="handleFileUpload(event)">
                     </div>
                 </div>
 
                 <div class="tab-content" id="ocr-tab">
                     <div class="file-upload" onclick="document.getElementById('imageInput').click()">
+                        <div id="imagePreviewContainer" style="display: none; margin-bottom: 15px;">
+                            <img id="imagePreview" src="#" alt="Image Preview" style="max-width: 100%; max-height: 150px; border-radius: 8px;">
+                        </div>
                         <div class="upload-icon">📷</div>
-                        <h3>Загрузите изображение для OCR</h3>
+                        <h3 id="imageLabel">Загрузите изображение для OCR</h3>
                         <p>Поддерживаются форматы: .jpg, .png, .gif, .bmp</p>
                         <input type="file" id="imageInput" accept="image/*" style="display:none" onchange="handleOCR(event)">
                     </div>
@@ -467,38 +470,56 @@
         };
 
         // Переключение табов
-        function switchTab(tabName) {
+        function switchTab(event, tabName) {
             // Убираем активный класс со всех табов и контента
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
             
             // Активируем нужный таб и контент
-            event.target.classList.add('active');
+            event.currentTarget.classList.add('active');
             document.getElementById(tabName + '-tab').style.display = 'block';
         }
 
-        // Обработка загрузки файлов
+        // Обработка загрузки текстовых файлов
         function handleFileUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
 
+            document.getElementById('fileLabel').textContent = `Выбран файл: ${file.name}`;
+
+            // Для .txt файлов, мы можем показать содержимое. Для остальных - нет.
+            if (file.type === 'text/plain') {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('textInput').value = e.target.result;
+                };
+                reader.readAsText(file);
+            } else {
+                // Для .docx и .pdf, просто подтверждаем выбор файла.
+                // Бэкенд обработает их содержимое.
+                document.getElementById('textInput').value = `Файл "${file.name}" готов к отправке на сервер для анализа.`;
+            }
+        }
+
+        // Обработка загрузки изображений для OCR
+        function handleOCR(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Показываем превью изображения
+            const previewContainer = document.getElementById('imagePreviewContainer');
+            const preview = document.getElementById('imagePreview');
             const reader = new FileReader();
+
             reader.onload = function(e) {
-                let text = '';
-                if (file.type === 'text/plain') {
-                    text = e.target.result;
-                } else {
-                    // Для других форматов можно добавить парсинг
-                    text = e.target.result;
-                }
-                document.getElementById('textInput').value = text;
-                // Переключаемся на таб текста
-                document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-                document.querySelector('.tab[onclick="switchTab(\'text\')"]').classList.add('active');
-                document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
-                document.getElementById('text-tab').style.display = 'block';
-            };
-            reader.readAsText(file);
+                preview.src = e.target.result;
+                previewContainer.style.display = 'block';
+                document.getElementById('imageLabel').textContent = `Выбрано изображение: ${file.name}`;
+            }
+            reader.readAsDataURL(file);
+            
+            // Очищаем текстовое поле, если там что-то было
+            document.getElementById('textInput').value = '';
         }
 
         // Основная функция анализа
@@ -507,28 +528,29 @@
             const fileInput = document.getElementById('fileInput');
             const imageInput = document.getElementById('imageInput');
             const sourceLanguage = document.getElementById('sourceLanguage').value;
-            const targetLanguage = document.getElementById('targetLanguage').value; // Получаем выбранный язык вывода
+            const targetLanguage = document.getElementById('targetLanguage').value;
             
             let inputData = null;
             let inputType = '';
 
-            // Определяем активную вкладку и получаем данные
             const activeTab = document.querySelector('.tab.active');
-            if (activeTab.textContent.includes('Ввод текста')) {
+            const activeTabText = activeTab.textContent;
+
+            if (activeTabText.includes('Ввод текста')) {
                 inputData = textInput.value.trim();
                 inputType = 'text';
                 if (!inputData) {
                     showNotification('Пожалуйста, введите текст для анализа', 'warning');
                     return;
                 }
-            } else if (activeTab.textContent.includes('Загрузка файла')) {
+            } else if (activeTabText.includes('Загрузка файла')) {
                 inputData = fileInput.files[0];
                 inputType = 'file';
                 if (!inputData) {
                     showNotification('Пожалуйста, выберите текстовый файл для анализа', 'warning');
                     return;
                 }
-            } else if (activeTab.textContent.includes('OCR сканирование')) {
+            } else if (activeTabText.includes('OCR сканирование')) {
                 inputData = imageInput.files[0];
                 inputType = 'image';
                 if (!inputData) {
@@ -537,7 +559,6 @@
                 }
             }
 
-            // Показываем загрузку
             showLoading(true);
             document.getElementById('analyzeBtn').disabled = true;
             updateLoadingText('Отправка данных на сервер...');
@@ -545,7 +566,7 @@
             try {
                 const formData = new FormData();
                 formData.append('sourceLanguage', sourceLanguage);
-                formData.append('targetLanguage', targetLanguage); // Отправляем целевой язык
+                formData.append('targetLanguage', targetLanguage);
                 formData.append('inputType', inputType);
 
                 if (inputType === 'text') {
@@ -561,87 +582,85 @@
 
                 if (!response.ok) {
                     let errorMessage = 'Неизвестная ошибка при анализе документа.';
-                    const responseText = await response.text(); // Прочитать тело ответа один раз как текст
                     try {
-                        const errorData = JSON.parse(responseText); // Попытаться разобрать как JSON
-                        errorMessage = errorData.message || errorMessage;
-                    } catch (jsonError) {
-                        // Если не JSON, использовать текст как сообщение об ошибке
-                        errorMessage = `Ошибка сервера: ${response.status} - ${responseText.substring(0, 200)}...`;
+                        const errorData = await response.json();
+                        errorMessage = errorData.message || JSON.stringify(errorData);
+                    } catch {
+                        errorMessage = await response.text();
                     }
                     throw new Error(errorMessage);
                 }
 
                 const data = await response.json();
                 
-                // Сохраняем оригинальный текст (если был передан)
-                analysisResults.originalText = data.extractedText || inputData;
+                analysisResults.originalText = data.extractedText || (typeof inputData === 'string' ? inputData : inputData.name);
                 analysisResults.translatedText = data.translatedText;
                 analysisResults.sentiment = data.sentimentAnalysis;
-                analysisResults.emotions = data.emotionsAnalysis || []; // Добавим эмоции, если они будут в ответе
+                analysisResults.emotions = data.emotionsAnalysis || [];
+
+                // Если был OCR, помещаем распознанный текст в поле ввода
+                if (inputType === 'image' || inputType === 'file') {
+                    document.getElementById('textInput').value = data.extractedText;
+                }
 
                 displayResults();
                 
             } catch (error) {
                 console.error('Analysis Error:', error);
-                showNotification(`Ошибка при анализе текста: ${error.message}`, 'error');
+                showNotification(`Ошибка при анализе: ${error.message}`, 'error');
             } finally {
                 showLoading(false);
                 document.getElementById('analyzeBtn').disabled = false;
             }
         }
 
-        // Заглушки для функций перевода, настроения и эмоций больше не нужны,
-        // так как вся логика перенесена на Netlify Function.
-        // Оставляем их пустыми или удаляем, чтобы избежать конфликтов.
-        async function translateText() { return ''; }
-        async function analyzeSentiment() { return {}; }
-        async function analyzeEmotions() { return []; }
-
         // Отображение результатов
         function displayResults() {
-            // Показываем блок результатов
             document.getElementById('results').style.display = 'block';
-            
-            // Переведенный текст
             document.getElementById('translatedText').textContent = analysisResults.translatedText;
             
-            // Настроение
             const sentiment = analysisResults.sentiment;
             const sentimentBar = document.getElementById('sentimentBar');
             const sentimentDetails = document.getElementById('sentimentDetails');
             
-            // Вычисляем ширину и цвет полоски
-            const scorePercent = ((sentiment.score + 1) / 2) * 100;
-            sentimentBar.style.width = Math.abs(sentiment.score.toFixed(2)) * 50 + '%'; // Используем toFixed(2) для score
+            // Backend возвращает SentimentScore, а не score.
+            const score = sentiment.SentimentScore || 0;
+            const magnitude = sentiment.magnitude || 0; // На случай если magnitude нет
             
-            if (sentiment.SentimentClassification === 'Positive') {
-                sentimentBar.className = 'score-fill positive';
-            } else if (sentiment.SentimentClassification === 'Negative') {
-                sentimentBar.className = 'score-fill negative';
+            // Преобразуем [-1, 1] в [0, 100]
+            const scorePercent = (score + 1) / 2 * 100;
+            sentimentBar.style.width = `${scorePercent}%`;
+            
+            sentimentBar.className = 'score-fill'; // Сбрасываем классы
+            if (sentiment.SentimentClassification.toLowerCase().includes('positive')) {
+                sentimentBar.classList.add('positive');
+            } else if (sentiment.SentimentClassification.toLowerCase().includes('negative')) {
+                sentimentBar.classList.add('negative');
             } else {
-                sentimentBar.className = 'score-fill neutral';
+                sentimentBar.classList.add('neutral');
             }
             
             sentimentDetails.innerHTML = `
                 <p><strong>Общая оценка:</strong> ${sentiment.SentimentClassification}</p>
-                <p><strong>Показатель:</strong> ${sentiment.score.toFixed(2)} (-1 до 1)</p>
-                <p><strong>Интенсивность:</strong> ${sentiment.magnitude.toFixed(2)}</p>
+                <p><strong>Показатель:</strong> ${score.toFixed(2)} (от -1 до 1)</p>
+                ${magnitude ? `<p><strong>Интенсивность:</strong> ${magnitude.toFixed(2)}</p>` : ''}
             `;
             
-            // Эмоции
             const emotionsGrid = document.getElementById('emotionsGrid');
-            emotionsGrid.innerHTML = analysisResults.emotions
-                .slice(0, 6)
-                .map(emotion => `
-                    <div class="emotion-item">
-                        <div class="emotion-emoji">${emotion.emoji}</div>
-                        <div class="emotion-name">${emotion.name}</div>
-                        <div class="emotion-score">${Math.round(emotion.score * 100)}%</div>
-                    </div>
-                `).join('');
+            if(analysisResults.emotions && analysisResults.emotions.length > 0) {
+                emotionsGrid.innerHTML = analysisResults.emotions
+                    .slice(0, 6)
+                    .map(emotion => `
+                        <div class="emotion-item">
+                            <div class="emotion-emoji">${emotion.emoji}</div>
+                            <div class="emotion-name">${emotion.name}</div>
+                            <div class="emotion-score">${Math.round(emotion.score * 100)}%</div>
+                        </div>
+                    `).join('');
+            } else {
+                emotionsGrid.innerHTML = '<p>Анализ эмоций не дал результатов.</p>';
+            }
                 
-            // Плавная прокрутка к результатам
             document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
         }
 
@@ -654,56 +673,82 @@
 
         function exportPDF() {
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
+            const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
             
-            // Заголовок
+            // Установка шрифта, поддерживающего кириллицу
+            doc.addFont('https://fonts.gstatic.com/s/roboto/v27/KFOmCnqEu92Fr1Mu4mxP.ttf', 'Roboto', 'normal');
+            doc.setFont('Roboto');
+
             doc.setFontSize(20);
             doc.text('Результаты анализа текста', 20, 30);
             
-            // Оригинальный текст
-            doc.setFontSize(14);
-            doc.text('Оригинальный текст:', 20, 50);
-            doc.setFontSize(12);
-            const originalLines = doc.splitTextToSize(analysisResults.originalText, 170);
-            doc.text(originalLines, 20, 60);
+            let yPos = 45;
+
+            function addSection(title, text) {
+                if (yPos > 260) { // Проверка на новую страницу
+                    doc.addPage();
+                    yPos = 20;
+                }
+                doc.setFontSize(14);
+                doc.text(title, 20, yPos);
+                yPos += 8;
+                doc.setFontSize(12);
+                const lines = doc.splitTextToSize(text, 170);
+                doc.text(lines, 20, yPos);
+                yPos += lines.length * 5 + 10;
+            }
+
+            addSection('Оригинальный текст:', analysisResults.originalText);
+            addSection('Переведенный текст:', analysisResults.translatedText);
+
+            if (yPos > 250) {
+                doc.addPage();
+                yPos = 20;
+            }
             
-            // Переведенный текст
-            let yPos = 60 + originalLines.length * 5 + 10;
-            doc.setFontSize(14);
-            doc.text('Переведенный текст:', 20, yPos);
-            doc.setFontSize(12);
-            const translatedLines = doc.splitTextToSize(analysisResults.translatedText, 170);
-            doc.text(translatedLines, 20, yPos + 10);
-            
-            // Анализ настроения
-            yPos += translatedLines.length * 5 + 20;
             doc.setFontSize(14);
             doc.text('Анализ настроения:', 20, yPos);
+            yPos += 8;
             doc.setFontSize(12);
-            doc.text(`Оценка: ${analysisResults.sentiment.label}`, 20, yPos + 10);
-            doc.text(`Показатель: ${analysisResults.sentiment.score.toFixed(2)}`, 20, yPos + 20);
-            
+            // Исправлено: SentimentClassification и SentimentScore
+            doc.text(`Оценка: ${analysisResults.sentiment.SentimentClassification}`, 20, yPos);
+            yPos += 7;
+            doc.text(`Показатель: ${(analysisResults.sentiment.SentimentScore || 0).toFixed(2)}`, 20, yPos);
+            yPos += 10;
+
+            doc.setFontSize(14);
+            doc.text('Анализ эмоций:', 20, yPos);
+            yPos += 8;
+            doc.setFontSize(12);
+            if(analysisResults.emotions && analysisResults.emotions.length > 0) {
+                analysisResults.emotions.forEach(emotion => {
+                    if (yPos > 280) { doc.addPage(); yPos = 20; }
+                    doc.text(`${emotion.name}: ${Math.round(emotion.score * 100)}%`, 20, yPos);
+                    yPos += 7;
+                });
+            } else {
+                doc.text('Нет данных.', 20, yPos);
+            }
+
             doc.save('text-analysis.pdf');
         }
 
         function exportDOCX() {
-            // Для упрощения создаем простой документ
-            showNotification('DOCX экспорт будет доступен в полной версии', 'info');
+            showNotification('Экспорт в DOCX в данный момент не реализован.', 'info');
         }
 
         function copyToClipboard() {
             const content = formatExportContent();
             navigator.clipboard.writeText(content).then(() => {
                 showNotification('Результаты скопированы в буфер обмена!', 'success');
-            }).catch(() => {
-                showNotification('Ошибка при копировании', 'error');
+            }).catch(err => {
+                showNotification('Ошибка при копировании: ' + err.message, 'error');
             });
         }
 
-        // Форматирование контента для экспорта
         function formatExportContent() {
             let content = 'РЕЗУЛЬТАТЫ АНАЛИЗА ТЕКСТА\n';
-            content += '=' .repeat(50) + '\n\n';
+            content += '='.repeat(50) + '\n\n';
             
             content += 'ОРИГИНАЛЬНЫЙ ТЕКСТ:\n';
             content += analysisResults.originalText + '\n\n';
@@ -712,14 +757,21 @@
             content += analysisResults.translatedText + '\n\n';
             
             content += 'АНАЛИЗ НАСТРОЕНИЯ:\n';
+            // Исправлено: SentimentClassification и SentimentScore
             content += `Оценка: ${analysisResults.sentiment.SentimentClassification}\n`;
-            content += `Показатель: ${analysisResults.sentiment.score.toFixed(2)}\n`;
-            content += `Интенсивность: ${analysisResults.sentiment.magnitude.toFixed(2)}\n\n`;
+            content += `Показатель: ${(analysisResults.sentiment.SentimentScore || 0).toFixed(2)}\n`;
+            if (analysisResults.sentiment.magnitude) {
+                content += `Интенсивность: ${analysisResults.sentiment.magnitude.toFixed(2)}\n\n`;
+            }
             
             content += 'АНАЛИЗ ЭМОЦИЙ:\n';
-            analysisResults.emotions.forEach(emotion => {
-                content += `${emotion.name}: ${Math.round(emotion.score * 100)}%\n`;
-            });
+            if(analysisResults.emotions && analysisResults.emotions.length > 0) {
+                analysisResults.emotions.forEach(emotion => {
+                    content += `${emotion.name}: ${Math.round(emotion.score * 100)}%\n`;
+                });
+            } else {
+                content += 'Нет данных.\n';
+            }
             
             content += '\n\nСгенерировано: TextAnalyzer Pro\n';
             content += 'Дата: ' + new Date().toLocaleString('ru-RU');
@@ -730,6 +782,7 @@
         // Вспомогательные функции
         function showLoading(show) {
             document.getElementById('loading').style.display = show ? 'block' : 'none';
+            document.getElementById('results').style.display = show ? 'none' : document.getElementById('results').style.display;
         }
 
         function updateLoadingText(text) {
@@ -747,8 +800,9 @@
             URL.revokeObjectURL(url);
         }
 
-        function showNotification(message, type) {
-            // Простая реализация уведомлений
+        function showNotification(message, type = 'info') {
+            console.log(`[${type.toUpperCase()}] Notification:`, message);
+            // Можно заменить на более красивую реализацию уведомлений
             alert(message);
         }
     </script>
