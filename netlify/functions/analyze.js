@@ -96,10 +96,9 @@ exports.handler = async (event, context) => {
 
                 const ocrResponse = await fetch(ocrEndpoint, {
                     method: 'POST',
-                    headers: {
-                        'Apikey': CLOUDMERSIVE_API_KEY,
-                        ...formData.getHeaders()
-                    },
+    headers: {
+        'Apikey': CLOUDMERSIVE_API_KEY
+    },
                     body: formData
                 });
 
