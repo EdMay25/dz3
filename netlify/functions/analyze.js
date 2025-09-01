@@ -9,6 +9,7 @@ exports.handler = async (event, context) => {
 
     const CLOUDMERSIVE_API_KEY = process.env.CLOUDMERSIVE_API_KEY;
     const GOOGLE_TRANSLATE_API_KEY = process.env.GOOGLE_TRANSLATE_API_KEY;
+    const HUGGING_FACE_API_KEY = process.env.HUGGING_FACE_API_KEY;
 
     try {
         let extractedText = '';
@@ -159,25 +160,46 @@ exports.handler = async (event, context) => {
         const translatedTextEnglish = translateData.data.translations[0].translatedText;
         console.log('Translated Text (English):', translatedTextEnglish.substring(0, 100) + '...');
 
-        // 3. Анализ тональности с Cloudmersive NLP
-        const sentimentResponse = await fetch('https://testapi.cloudmersive.com/nlp-v2/analytics/sentiment', {
+
+        // 3. Анализ тональности с Hugging Face
+
+        const HUGGING_FACE_API_KEY = process.env.HUGGING_FACE_API_KEY;
+        const sentimentResponse = await fetch('https://api-inference.huggingface.co/models/cardiffnlp/twitter-xlm-roberta-base-sentiment', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Apikey': CLOUDMERSIVE_API_KEY
+                'Authorization': `Bearer ${HUGGING_FACE_API_KEY}`
             },
-            body: JSON.stringify({ TextToAnalyze: translatedTextEnglish })
+            body: JSON.stringify({ inputs: translatedTextEnglish })
         });
 
         if (!sentimentResponse.ok) {
             const errorText = await sentimentResponse.text();
-            console.error('Cloudmersive NLP Sentiment Error:', sentimentResponse.status, errorText);
+            console.error('Hugging Face Sentiment Error:', sentimentResponse.status, errorText);
             return {
                 statusCode: sentimentResponse.status,
                 body: JSON.stringify({ message: 'Ошибка при анализе тональности текста.', details: errorText })
             };
         }
-        const sentimentAnalysisEnglish = await sentimentResponse.json();
+        const sentimentData = await sentimentResponse.json();
+        console.log('Hugging Face Raw Response:', sentimentData);
+
+        // Найдем метку с наивысшей оценкой
+        const topSentiment = sentimentData[0].reduce((prev, current) => (prev.score > current.score) ? prev : current);
+
+        // Преобразуем метки в нужный формат
+        const labelMap = {
+            "positive": "Positive",
+            "negative": "Negative",
+            "neutral": "Neutral"
+        };
+        const sentimentClassification = labelMap[topSentiment.label.toLowerCase()] || "Neutral";
+
+
+        const sentimentAnalysisEnglish = {
+            SentimentClassification: sentimentClassification,
+            SentimentScore: topSentiment.score
+        };
         console.log('Sentiment Analysis (English):', sentimentAnalysisEnglish);
 
         // 4. Анализ эмоций с Cloudmersive NLP (имитация на основе тональности)
