@@ -184,22 +184,42 @@ exports.handler = async (event, context) => {
         const sentimentData = await sentimentResponse.json();
         console.log('Hugging Face Raw Response:', sentimentData);
 
-        // Найдем метку с наивысшей оценкой
-        const topSentiment = sentimentData[0].reduce((prev, current) => (prev.score > current.score) ? prev : current);
-
-        // Преобразуем метки в нужный формат
-        const labelMap = {
-            "positive": "Positive",
-            "negative": "Negative",
-            "neutral": "Neutral"
+        let sentimentAnalysisEnglish = {
+            SentimentClassification: "Neutral", // Default to Neutral
+            SentimentScore: 0 // Default score
         };
-        const sentimentClassification = labelMap[topSentiment.label.toLowerCase()] || "Neutral";
 
+        if (sentimentData && sentimentData.length > 0 && sentimentData[0] && typeof sentimentData[0] === 'object') {
+            const sentiments = sentimentData[0];
+            if (Array.isArray(sentiments)) {
+                const topSentiment = sentiments.reduce((prev, current) => {
+                    if (typeof current.score === 'number' && current.score > (prev ? prev.score : -Infinity)) {
+                        return current;
+                    }
+                    return prev;
+                }, null);
 
-        const sentimentAnalysisEnglish = {
-            SentimentClassification: sentimentClassification,
-            SentimentScore: topSentiment.score
-        };
+                if (topSentiment && typeof topSentiment.score === 'number') {
+                    const labelMap = {
+                        "positive": "Positive",
+                        "negative": "Negative",
+                        "neutral": "Neutral"
+                    };
+                    const sentimentClassification = labelMap[topSentiment.label.toLowerCase()] || "Neutral";
+
+                    sentimentAnalysisEnglish = {
+                        SentimentClassification: sentimentClassification,
+                        SentimentScore: topSentiment.score
+                    };
+                } else {
+                    console.warn('Could not determine top sentiment from response.');
+                }
+            } else {
+                console.warn('Hugging Face response format is not as expected (sentimentData[0] is not an array).');
+            }
+        } else {
+            console.warn('Hugging Face response is empty or malformed.');
+        }
         console.log('Sentiment Analysis (English):', sentimentAnalysisEnglish);
 
         // 4. Анализ эмоций с Cloudmersive NLP (имитация на основе тональности)
