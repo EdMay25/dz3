@@ -190,26 +190,26 @@ exports.handler = async (event, context) => {
             };
         }
 
-        const translateData = await translateResponse.json();
-        const translatedTextEnglish = translateData.data.translations[0].translatedText;
-        console.log('Translated Text (English):', translatedTextEnglish.substring(0, 100) + '...');
+                const translateData = await translateResponse.json();
+                const translatedTextEnglish = translateData.data.translations[0].translatedText;
+                console.log('Translated Text (English):', translatedTextEnglish.substring(0, 100) + '...');
 
-        // Проверка на пустой переведенный текст
-        if (!translatedTextEnglish || translatedTextEnglish.trim() === '') {
-            console.error('WARNING: Google Translate returned empty text!');
-            return {
-                statusCode: 200,
-                body: JSON.stringify({
-                    extractedText: extractedText,
-                    translatedText: "Текст не был переведен. Google Translate вернул пустой результат.",
-                    sentimentAnalysis: {
-                        SentimentClassification: "Neutral",
-                        SentimentScore: 0
-                    },
-                    emotionsAnalysis: []
-                })
-            };
-        }
+                // Проверка на пустой переведенный текст
+                if (!translatedTextEnglish || translatedTextEnglish.trim() === '') {
+                    console.error('WARNING: Google Translate returned empty text!');
+                    return {
+                        statusCode: 200,
+                        body: JSON.stringify({
+                            extractedText: extractedText,
+                            translatedText: "Текст не был переведен. Возникла ошибка при переводе.",
+                            sentimentAnalysis: {
+                                SentimentClassification: "Neutral",
+                                SentimentScore: 0
+                            },
+                            emotionsAnalysis: []
+                        })
+                    };
+                }
 
 
         // 3. Анализ тональности с Hugging Face

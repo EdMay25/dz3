@@ -659,6 +659,11 @@
                     document.getElementById('textInput').value = data.extractedText;
                 }
 
+                // Проверка на пустой переведенный текст
+                if (!data.translatedText || data.translatedText.trim() === '') {
+                    data.translatedText = "Текст не был переведен. Возникла ошибка при переводе.";
+                }
+
                 displayResults();
 
             } catch (error) {
