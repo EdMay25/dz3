@@ -217,9 +217,9 @@ exports.handler = async (event, context) => {
 
                     sentimentAnalysisEnglish = {
                         SentimentClassification: sentimentClassification,
-                        SentimentScore: topSentiment.score
-                    };
-                } else {
+                    SentimentScore: (topSentiment && typeof topSentiment.score === 'number') ? topSentiment.score : 0
+                };
+            } else {
                     console.warn('Could not determine top sentiment from response.');
                 }
             } else {
