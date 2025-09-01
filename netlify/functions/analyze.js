@@ -160,7 +160,7 @@ exports.handler = async (event, context) => {
         console.log('Translated Text (English):', translatedTextEnglish.substring(0, 100) + '...');
 
         // 3. Анализ тональности с Cloudmersive NLP
-        const sentimentResponse = await fetch('https://api.cloudmersive.com/nlp-v2/analytics/sentiment', {
+        const sentimentResponse = await fetch('https://testapi.cloudmersive.com/nlp-v2/analytics/sentiment', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
