@@ -166,7 +166,7 @@ exports.handler = async (event, context) => {
                 'Content-Type': 'application/json',
                 'Apikey': CLOUDMERSIVE_API_KEY
             },
-            body: JSON.stringify({ Text: translatedTextEnglish })
+            body: JSON.stringify({ TextToAnalyze: translatedTextEnglish })
         });
 
         if (!sentimentResponse.ok) {
