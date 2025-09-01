@@ -149,10 +149,10 @@ exports.handler = async (event, context) => {
 
         if (!translateResponse.ok) {
             const errorData = await translateResponse.json();
-            console.error('Google Translate Error:', translateResponse.status, errorData);
+            console.error('Google Translate Error:', translateResponse.status, JSON.stringify(errorData));
             return {
                 statusCode: translateResponse.status,
-                body: JSON.stringify({ message: 'Ошибка при переводе текста.', details: errorData })
+                body: JSON.stringify({ message: 'Ошибка при переводе текста.', details: errorData.error ? errorData.error.message : JSON.stringify(errorData) })
             };
         }
         const translateData = await translateResponse.json();
