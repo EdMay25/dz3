@@ -1,7 +1,7 @@
 const fetch = require('node-fetch');
 const Busboy = require('busboy');
 const { Buffer } = require('buffer');
-const { Storage } = require('@google-cloud/storage');
+const FormData = require('form-data'); // Используем пакет form-data
 
 exports.handler = async (event, context) => {
     if (event.httpMethod !== 'POST') {
@@ -92,16 +92,19 @@ exports.handler = async (event, context) => {
 
             if (ocrEndpoint) {
                 console.log('OCR Endpoint:', ocrEndpoint);
-                const formData = new FormData();
-                const fileBlob = new Blob([fileBuffer], { type: fileMimeType });
-                formData.append('inputFile', fileBlob, fileName); // Изменено: используем fileBlob и передаем fileName отдельно
+                const form = new FormData(); // Используем экземпляр form-data
+                form.append('inputFile', fileBuffer, {
+                    filename: fileName,
+                    contentType: fileMimeType
+                });
 
                 const ocrResponse = await fetch(ocrEndpoint, {
                     method: 'POST',
                     headers: {
-                        'Apikey': CLOUDMERSIVE_API_KEY
+                        'Apikey': CLOUDMERSIVE_API_KEY,
+                        ...form.getHeaders() // Получаем заголовки из form-data
                     },
-                    body: formData
+                    body: form // Передаем экземпляр form-data в body
                 });
 
                 if (!ocrResponse.ok) {
