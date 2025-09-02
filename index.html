@@ -825,11 +825,6 @@
                 analysisResults.sentiment = data.sentimentAnalysis;
                 analysisResults.emotions = data.emotionsAnalysis || [];
 
-                // Если был OCR, помещаем распознанный текст в поле ввода
-                if (inputType === 'image' || inputType === 'file') {
-                    document.getElementById('textInput').value = data.extractedText;
-                }
-
                 // Проверка на пустой переведенный текст
                 if (!data.translatedText || data.translatedText.trim() === '') {
                     data.translatedText = "Текст не был переведен. Возникла ошибка при переводе.";
