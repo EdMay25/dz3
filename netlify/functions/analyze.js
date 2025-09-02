@@ -19,7 +19,7 @@ exports.handler = async (event, context) => {
         let inputType = '';
         let fileBuffer = null;
         let fileName = '';
-        let fileMimeType = '';
+            let fileMimeType = ''; // Инициализируем как пустую строку
 
         console.log('--- Netlify Function Start ---');
         console.log('Event HTTP Method:', event.httpMethod);
@@ -75,7 +75,8 @@ exports.handler = async (event, context) => {
         if ((inputType === 'file' || inputType === 'image') && fileBuffer) {
             console.log('DEBUG: Entering file/image processing block.'); // Добавлено логирование
             let ocrEndpoint = '';
-            if (fileMimeType.startsWith('image/')) {
+            // Добавлена проверка на fileMimeType перед вызовом startsWith
+            if (fileMimeType && fileMimeType.startsWith('image/')) {
                 ocrEndpoint = 'https://api.cloudmersive.com/ocr/image/toText';
             } else if (fileMimeType === 'application/pdf') {
                 ocrEndpoint = 'https://api.cloudmersive.com/ocr/pdf/toText';
