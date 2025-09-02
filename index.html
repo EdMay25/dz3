@@ -210,6 +210,8 @@
         .results {
             display: none;
             margin-top: 30px;
+            display: flex; /* Добавлено для Flexbox */
+            flex-direction: column; /* Добавлено для вертикального расположения */
         }
 
         .result-card {
@@ -261,7 +263,8 @@
 
         .emotion-percentage-item {
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-start; /* Изменено для уменьшения пробелов */
+            align-items: baseline; /* Выравнивание по базовой линии */
             padding: 8px 0;
             border-bottom: 1px solid #f0f0f0;
         }
@@ -269,6 +272,7 @@
         .emotion-name {
             font-weight: 500;
             color: #495057;
+            margin-right: 10px; /* Добавлен небольшой отступ */
         }
 
         .emotion-value {
@@ -703,44 +707,43 @@
 
             <div class="results" id="results">
                 <div class="result-card">
+                    <div class="result-title">Анализ эмоций</div>
+                    <div id="emotionsTextList"></div>
+                </div>
+
+                <div class="result-card">
+                    <div class="result-title">Анализ настроения</div>
+                    <div class="sentiment-score">
+                        <span>Негативное</span>
+                        <div class="score-bar">
+                            <div class="score-fill" id="sentimentBar"></div>
+                        </div>
+                        <span>Позитивное</span>
+                    </div>
+                    <div id="sentimentDetails"></div>
+                </div>
+
+                <div class="result-card">
                     <div class="result-title">Оценка эмоций</div>
                     <div class="chart-container">
                         <canvas id="emotionsChart"></canvas>
                     </div>
                 </div>
-                <div>
-                    <div class="result-card">
-                        <div class="result-title">Переведенный текст</div>
-                        <div id="translatedText" class="translated-text"></div>
-                    </div>
 
-                    <div class="result-card">
-                        <div class="result-title">Анализ настроения</div>
-                        <div class="sentiment-score">
-                            <span>Негативное</span>
-                            <div class="score-bar">
-                                <div class="score-fill" id="sentimentBar"></div>
-                            </div>
-                            <span>Позитивное</span>
-                        </div>
-                        <div id="sentimentDetails"></div>
-                    </div>
+                <div class="result-card">
+                    <div class="result-title">Переведенный текст</div>
+                    <div id="translatedText" class="translated-text"></div>
+                </div>
 
-                    <div class="result-card">
-                        <div class="result-title">Анализ эмоций</div>
-                        <div id="emotionsTextList"></div>
-                    </div>
-
-                    <div class="export-section">
-                        <h3 class="export-title">Экспорт результатов</h3>
-                        <div class="export-buttons">
-                            <div class="dropdown">
-                                <button type="button" class="export-btn dropdown-toggle" onclick="toggleDropdown()">Получить</button>
-                                <div class="dropdown-menu" id="exportDropdown">
-                                    <a href="#" onclick="exportOption('txt')">Как TXT</a>
-                                    <a href="#" onclick="exportOption('docx')">Как DOCX</a>
-                                    <a href="#" onclick="exportOption('pdf-print')">Как PDF и Печать</a>
-                                </div>
+                <div class="export-section">
+                    <h3 class="export-title">Экспорт результатов</h3>
+                    <div class="export-buttons">
+                        <div class="dropdown">
+                            <button type="button" class="export-btn dropdown-toggle" onclick="toggleDropdown()">Получить</button>
+                            <div class="dropdown-menu" id="exportDropdown">
+                                <a href="#" onclick="exportOption('txt')">Как TXT</a>
+                                <a href="#" onclick="exportOption('docx')">Как DOCX</a>
+                                <a href="#" onclick="exportOption('pdf-print')">Как PDF и Печать</a>
                             </div>
                         </div>
                     </div>
