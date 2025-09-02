@@ -35,16 +35,14 @@ exports.handler = async (event, context) => {
         await new Promise((resolve, reject) => {
             const busboy = Busboy({ headers: event.headers });
 
-            busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
-                console.log(`File [${fieldname}]: filename=${filename}, mimetype=${mimetype}`);
-                console.log(`DEBUG: busboy.on('file') - fieldname: ${fieldname}, filename: ${JSON.stringify(filename)}, encoding: ${encoding}, mimetype: ${mimetype}`);
-                console.log(`DEBUG: Type of filename: ${typeof filename}, Type of mimetype: ${typeof mimetype}`);
+            busboy.on('file', (fieldname, file, fileInfo) => { // Изменено: filename теперь fileInfo
+                console.log(`File [${fieldname}]: filename=${fileInfo.filename}, mimetype=${fileInfo.mimeType}`); // Изменено: используем fileInfo
                 const chunks = [];
                 file.on('data', data => chunks.push(data));
                 file.on('end', () => {
                     fileBuffer = Buffer.concat(chunks);
-                    fileName = filename;
-                    fileMimeType = mimetype; // Исправлено: сохраняем mimetype файла
+                    fileName = fileInfo.filename; // Изменено: используем fileInfo.filename
+                    fileMimeType = fileInfo.mimeType; // Изменено: используем fileInfo.mimeType
                 });
             });
 
