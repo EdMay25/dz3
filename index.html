@@ -58,7 +58,7 @@
         }
 
         .main-card {
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(20px);
             border-radius: 20px;
             padding: 40px;
@@ -501,6 +501,48 @@
             color: white;
         }
 
+        /* Dropdown styles */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-toggle {
+            width: auto; /* Allow button to size based on content */
+            min-width: 150px; /* Ensure a minimum width */
+        }
+
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+            border-radius: 8px;
+            overflow: hidden;
+            top: 100%; /* Position below the button */
+            left: 0;
+            margin-top: 5px; /* Small gap between button and dropdown */
+        }
+
+        .dropdown-menu a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            text-align: left;
+            transition: background-color 0.2s ease;
+        }
+
+        .dropdown-menu a:hover {
+            background-color: #f1f1f1;
+        }
+
+        .dropdown-menu.show {
+            display: block;
+        }
+
         .progress-bar {
             width: 100%;
             height: 6px;
@@ -692,10 +734,14 @@
                     <div class="export-section">
                         <h3 class="export-title">Экспорт результатов</h3>
                         <div class="export-buttons">
-                            <button type="button" class="export-btn" onclick="exportTXT()">Скачать TXT</button>
-                            <button type="button" class="export-btn" onclick="exportDOCX()">Скачать DOCX</button>
-                            <button type="button" class="export-btn" onclick="exportPDF()">Скачать PDF</button>
-                            <button type="button" class="export-btn" onclick="copyToClipboard()">Копировать</button>
+                            <div class="dropdown">
+                                <button type="button" class="export-btn dropdown-toggle" onclick="toggleDropdown()">Получить</button>
+                                <div class="dropdown-menu" id="exportDropdown">
+                                    <a href="#" onclick="exportOption('txt')">Как TXT</a>
+                                    <a href="#" onclick="exportOption('docx')">Как DOCX</a>
+                                    <a href="#" onclick="exportOption('pdf-print')">Как PDF и Печать</a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1000,89 +1046,113 @@
                 emotionsTextList.innerHTML = '<p>Анализ эмоций не дал результатов.</p>';
             }
 
-            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+            document.querySelector('.header').scrollIntoView({ behavior: 'smooth' });
         }
 
         // Функции экспорта
-        function exportTXT() {
-            const content = formatExportContent();
-            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-            downloadFile(blob, 'text-analysis.txt');
+        function toggleDropdown() {
+            document.getElementById("exportDropdown").classList.toggle("show");
         }
 
-        function exportPDF() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-
-            // Установка шрифта, поддерживающего кириллицу
-            doc.addFont('https://fonts.gstatic.com/s/roboto/v27/KFOmCnqEu92Fr1Mu4mxP.ttf', 'Roboto', 'normal');
-            doc.setFont('Roboto');
-
-            doc.setFontSize(20);
-            doc.text('Результаты анализа текста', 20, 30);
-
-            let yPos = 45;
-
-            function addSection(title, text) {
-                if (yPos > 260) { // Проверка на новую страницу
-                    doc.addPage();
-                    yPos = 20;
+        // Закрыть выпадающее меню, если пользователь щелкает за его пределами
+        window.onclick = function(event) {
+            if (!event.target.matches('.dropdown-toggle')) {
+                const dropdowns = document.getElementsByClassName("dropdown-menu");
+                for (let i = 0; i < dropdowns.length; i++) {
+                    const openDropdown = dropdowns[i];
+                    if (openDropdown.classList.contains('show')) {
+                        openDropdown.classList.remove('show');
+                    }
                 }
-                doc.setFontSize(14);
-                doc.text(title, 20, yPos);
-                yPos += 8;
-                doc.setFontSize(12);
-                const lines = doc.splitTextToSize(text, 170);
-                doc.text(lines, 20, yPos);
-                yPos += lines.length * 5 + 10;
             }
-
-            addSection('Оригинальный текст:', analysisResults.originalText);
-            addSection('Переведенный текст:', analysisResults.translatedText);
-
-            if (yPos > 250) {
-                doc.addPage();
-                yPos = 20;
-            }
-
-            doc.setFontSize(14);
-            doc.text('Анализ настроения:', 20, yPos);
-            yPos += 8;
-            doc.setFontSize(12);
-            // Исправлено: SentimentClassification и SentimentScore
-            doc.text(`Оценка: ${analysisResults.sentiment.SentimentClassification}`, 20, yPos);
-            yPos += 7;
-            doc.text(`Показатель: ${(analysisResults.sentiment.SentimentScore || 0).toFixed(2)}`, 20, yPos);
-            yPos += 10;
-
-            doc.setFontSize(14);
-            doc.text('Анализ эмоций:', 20, yPos);
-            yPos += 8;
-            doc.setFontSize(12);
-            if(analysisResults.emotions && analysisResults.emotions.length > 0) {
-                analysisResults.emotions.forEach(emotion => {
-                    if (yPos > 280) { doc.addPage(); yPos = 20; }
-                    doc.text(`${emotion.name}: ${Math.round(emotion.score * 100)}%`, 20, yPos);
-                    yPos += 7;
-                });
-            } else {
-                doc.text('Нет данных.', 20, yPos);
-            }
-
-            doc.save('text-analysis.pdf');
         }
 
-        function exportDOCX() {
-            showNotification('Экспорт в DOCX в данный момент не реализован.', 'info');
-        }
-
-        function copyToClipboard() {
+        async function exportOption(type) {
             const content = formatExportContent();
-            navigator.clipboard.writeText(content).then(() => {
-                showNotification('Результаты скопированы в буфер обмена!', 'success');
-            }).catch(err => {
-                showNotification('Ошибка при копировании: ' + err.message, 'error');
-            });
+            switch (type) {
+                case 'txt':
+                    const txtBlob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                    downloadFile(txtBlob, 'text-analysis.txt');
+                    break;
+                case 'docx':
+                    showNotification('Экспорт в DOCX в данный момент не реализован.', 'info');
+                    // Здесь будет логика для DOCX, когда она будет реализована
+                    break;
+                case 'pdf-print':
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+
+                    // Установка шрифта, поддерживающего кириллицу
+                    doc.addFont('https://fonts.gstatic.com/s/roboto/v27/KFOmCnqEu92Fr1Mu4mxP.ttf', 'Roboto', 'normal');
+                    doc.setFont('Roboto');
+
+                    doc.setFontSize(20);
+                    doc.text('Результаты анализа текста', 20, 30);
+
+                    let yPos = 45;
+
+                    function addSection(title, text) {
+                        if (yPos > 260) { // Проверка на новую страницу
+                            doc.addPage();
+                            yPos = 20;
+                        }
+                        doc.setFontSize(14);
+                        doc.text(title, 20, yPos);
+                        yPos += 8;
+                        doc.setFontSize(12);
+                        const lines = doc.splitTextToSize(text, 170);
+                        doc.text(lines, 20, yPos);
+                        yPos += lines.length * 5 + 10;
+                    }
+
+                    addSection('Оригинальный текст:', analysisResults.originalText);
+                    addSection('Переведенный текст:', analysisResults.translatedText);
+
+                    if (yPos > 250) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+
+                    doc.setFontSize(14);
+                    doc.text('Анализ настроения:', 20, yPos);
+                    yPos += 8;
+                    doc.setFontSize(12);
+                    doc.text(`Оценка: ${analysisResults.sentiment.SentimentClassification}`, 20, yPos);
+                    yPos += 7;
+                    doc.text(`Показатель: ${(analysisResults.sentiment.SentimentScore || 0).toFixed(2)}`, 20, yPos);
+                    yPos += 10;
+
+                    doc.setFontSize(14);
+                    doc.text('Анализ эмоций:', 20, yPos);
+                    yPos += 8;
+                    doc.setFontSize(12);
+                    if(analysisResults.emotions && analysisResults.emotions.length > 0) {
+                        analysisResults.emotions.forEach(emotion => {
+                            if (yPos > 280) { doc.addPage(); yPos = 20; }
+                            doc.text(`${emotion.name}: ${Math.round(emotion.score * 100)}%`, 20, yPos);
+                            yPos += 7;
+                        });
+                    } else {
+                        doc.text('Нет данных.', 20, yPos);
+                    }
+
+                    // Открываем PDF в новой вкладке и вызываем печать
+                    const pdfBlob = doc.output('blob');
+                    const pdfUrl = URL.createObjectURL(pdfBlob);
+                    const printWindow = window.open(pdfUrl);
+                    if (printWindow) {
+                        printWindow.onload = function() {
+                            printWindow.print();
+                            URL.revokeObjectURL(pdfUrl); // Освобождаем URL после печати
+                        };
+                    } else {
+                        showNotification('Не удалось открыть окно печати. Возможно, оно было заблокировано браузером.', 'error');
+                    }
+                    break;
+                default:
+                    showNotification('Неизвестный тип экспорта.', 'error');
+            }
+            toggleDropdown(); // Закрыть выпадающее меню после выбора
         }
 
         function formatExportContent() {
