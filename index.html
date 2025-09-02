@@ -91,9 +91,9 @@
         }
 
         .tab.active {
-            background: #01f383; /* Цвет кнопки */
+            background: #02c6f0; /* Новый цвет кнопки */
             color: white;
-            box-shadow: 0 0 15px #01f383, 0 0 30px rgba(1, 243, 131, 0.4); /* Неоновое свечение */
+            box-shadow: 0 0 15px #02c6f0, 0 0 30px rgba(2, 198, 240, 0.4); /* Неоновое свечение */
             border-radius: 12px; /* Применяем border-radius от analyze-btn */
         }
 
@@ -116,6 +116,9 @@
             font-family: inherit;
             resize: vertical;
             transition: border-color 0.3s ease;
+            /* Возвращаем исходный фон и цвет шрифта */
+            background-color: white;
+            color: #333;
         }
 
         .text-input:focus {
