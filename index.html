@@ -505,6 +505,53 @@
             color: white;
         }
 
+        /* Вариант 1: Неоновое свечение */
+        .analyze-btn.neon-glow {
+            background: transparent;
+            border: 2px solid #00d4ff;
+            color: #00d4ff;
+            box-shadow: 0 0 10px #00d4ff, 0 0 20px #00d4ff40;
+            transition: all 0.3s ease;
+        }
+
+        .analyze-btn.neon-glow:hover {
+            background: rgba(0, 212, 255, 0.1);
+            box-shadow: 0 0 15px #00d4ff, 0 0 30px #00d4ff80;
+            transform: translateY(-2px);
+        }
+
+        /* Вариант 2: Глубокий градиент */
+        .analyze-btn.deep-gradient {
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f0f23 100%);
+            border: 1px solid #667eea;
+            color: #e0e0e0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+        }
+
+        .analyze-btn.deep-gradient:hover {
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 100%);
+            border-color: #764ba2;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+        }
+
+        /* Вариант 3: Стеклянный минимализм */
+        .analyze-btn.glass-minimal {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .analyze-btn.glass-minimal:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+        }
+
         /* Dropdown styles */
         .dropdown {
             position: relative;
@@ -695,9 +742,14 @@
                     </select>
                 </div>
 
-                <button type="button" class="analyze-btn" id="analyzeBtn" onclick="analyzeText()">
+                <button type="button" class="analyze-btn glass-minimal" id="analyzeBtn" onclick="analyzeText()">
                     Анализировать текст
                 </button>
+
+                <div class="result-card" id="translatedTextCard" style="display: none;">
+                    <div class="result-title">Переведенный текст</div>
+                    <div id="translatedText" class="translated-text"></div>
+                </div>
             </div>
 
             <div class="loading" id="loading">
@@ -728,11 +780,6 @@
                     <div class="chart-container">
                         <canvas id="emotionsChart"></canvas>
                     </div>
-                </div>
-
-                <div class="result-card">
-                    <div class="result-title">Переведенный текст</div>
-                    <div id="translatedText" class="translated-text"></div>
                 </div>
 
                 <div class="export-section">
@@ -1000,6 +1047,7 @@
         // Отображение результатов
         function displayResults() {
             document.getElementById('results').style.display = 'flex';
+            document.getElementById('translatedTextCard').style.display = 'block'; // Показываем блок с переведенным текстом
             document.getElementById('translatedText').textContent = analysisResults.translatedText;
             renderEmotionsChart();
 
@@ -1194,7 +1242,8 @@
         // Вспомогательные функции
         function showLoading(show) {
             document.getElementById('loading').style.display = show ? 'block' : 'none';
-            document.getElementById('results').style.display = show ? 'none' : document.getElementById('results').style.display;
+            document.getElementById('results').style.display = show ? 'none' : 'none'; // Скрываем все результаты при загрузке
+            document.getElementById('translatedTextCard').style.display = show ? 'none' : 'none'; // Скрываем переведенный текст при загрузке
         }
 
         function updateLoadingText(text) {
