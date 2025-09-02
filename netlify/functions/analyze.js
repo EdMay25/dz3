@@ -1,9 +1,17 @@
-const fetch = require('node-fetch');
 const Busboy = require('busboy');
 const { Buffer } = require('buffer');
 const FormData = require('form-data'); // Используем пакет form-data
 
+// Динамический импорт node-fetch для совместимости с ES-модулями в CommonJS
+let fetch;
+const init = async () => {
+    if (!fetch) {
+        const nodeFetch = await import('node-fetch');
+        fetch = nodeFetch.default;
+    }
+};
 exports.handler = async (event, context) => {
+    await init(); // Инициализируем fetch перед выполнением логики функции
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: 'Method Not Allowed' };
     }
