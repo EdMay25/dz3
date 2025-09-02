@@ -93,10 +93,8 @@ exports.handler = async (event, context) => {
             if (ocrEndpoint) {
                 console.log('OCR Endpoint:', ocrEndpoint);
                 const formData = new FormData();
-                formData.append('inputFile', fileBuffer, {
-                    filename: fileName,
-                    contentType: fileMimeType
-                });
+                const fileBlob = new Blob([fileBuffer], { type: fileMimeType });
+                formData.append('inputFile', fileBlob, fileName); // Изменено: используем fileBlob и передаем fileName отдельно
 
                 const ocrResponse = await fetch(ocrEndpoint, {
                     method: 'POST',
