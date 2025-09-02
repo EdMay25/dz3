@@ -1,6 +1,7 @@
 const Busboy = require('busboy');
 const { Buffer } = require('buffer');
-const FormData = require('form-data'); // Используем пакет form-data
+const { ImageAnnotatorClient } = require('@google-cloud/vision');
+const { Storage } = require('@google-cloud/storage');
 
 // Динамический импорт node-fetch для совместимости с ES-модулями в CommonJS
 let fetch;
@@ -10,15 +11,20 @@ const init = async () => {
         fetch = nodeFetch.default;
     }
 };
+
+// Инициализация клиентов Google Cloud Vision и Storage
+const visionClient = new ImageAnnotatorClient();
+const storageClient = new Storage();
+
 exports.handler = async (event, context) => {
     await init(); // Инициализируем fetch перед выполнением логики функции
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: 'Method Not Allowed' };
     }
 
-    const CLOUDMERSIVE_API_KEY = process.env.CLOUDMERSIVE_API_KEY;
     const GOOGLE_TRANSLATE_API_KEY = process.env.GOOGLE_TRANSLATE_API_KEY;
     const HUGGING_FACE_API_KEY = process.env.HUGGING_FACE_API_KEY;
+    const GOOGLE_CLOUD_PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT_ID; // Для Google Cloud Storage
 
     try {
         let extractedText = '';
@@ -27,7 +33,7 @@ exports.handler = async (event, context) => {
         let inputType = '';
         let fileBuffer = null;
         let fileName = '';
-            let fileMimeType = ''; // Инициализируем как пустую строку
+        let fileMimeType = '';
 
         console.log('--- Netlify Function Start ---');
         console.log('Event HTTP Method:', event.httpMethod);
@@ -43,14 +49,14 @@ exports.handler = async (event, context) => {
         await new Promise((resolve, reject) => {
             const busboy = Busboy({ headers: event.headers });
 
-            busboy.on('file', (fieldname, file, fileInfo) => { // Изменено: filename теперь fileInfo
-                console.log(`File [${fieldname}]: filename=${fileInfo.filename}, mimetype=${fileInfo.mimeType}`); // Изменено: используем fileInfo
+            busboy.on('file', (fieldname, file, fileInfo) => {
+                console.log(`File [${fieldname}]: filename=${fileInfo.filename}, mimetype=${fileInfo.mimeType}`);
                 const chunks = [];
                 file.on('data', data => chunks.push(data));
                 file.on('end', () => {
                     fileBuffer = Buffer.concat(chunks);
-                    fileName = fileInfo.filename; // Изменено: используем fileInfo.filename
-                    fileMimeType = fileInfo.mimeType; // Изменено: используем fileInfo.mimeType
+                    fileName = fileInfo.filename;
+                    fileMimeType = fileInfo.mimeType;
                 });
             });
 
@@ -78,61 +84,90 @@ exports.handler = async (event, context) => {
         console.log('Extracted Text (from text input):', extractedText.substring(0, Math.min(extractedText.length, 100)) + '...');
         console.log('File Name:', fileName);
         console.log('File MIME Type:', fileMimeType);
-        console.log('DEBUG: fileBuffer exists:', !!fileBuffer); // Добавлено логирование
+        console.log('DEBUG: fileBuffer exists:', !!fileBuffer);
 
         if ((inputType === 'file' || inputType === 'image') && fileBuffer) {
-            console.log('DEBUG: Entering file/image processing block.'); // Добавлено логирование
-            let ocrEndpoint = '';
-            // Добавлена проверка на fileMimeType перед вызовом startsWith
+            console.log('DEBUG: Entering file/image processing block with Google Cloud Vision.');
+
             if (fileMimeType && fileMimeType.startsWith('image/')) {
-                ocrEndpoint = 'https://api.cloudmersive.com/ocr/image/toText';
+                const [result] = await visionClient.documentTextDetection({
+                    image: { content: fileBuffer.toString('base64') },
+                });
+                const detections = result.fullTextAnnotation;
+                extractedText = detections ? detections.text : '';
+                console.log('Extracted Text (from Google Vision Image OCR):', extractedText.substring(0, Math.min(extractedText.length, 100)) + '...');
             } else if (fileMimeType === 'application/pdf') {
-                ocrEndpoint = 'https://api.cloudmersive.com/ocr/pdf/toText';
-            } else if (fileMimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-                ocrEndpoint = 'https://api.cloudmersive.com/convert/docx/to/txt';
+                // Для PDF требуется загрузка в Google Cloud Storage
+                if (!GOOGLE_CLOUD_PROJECT_ID) {
+                    console.error('GOOGLE_CLOUD_PROJECT_ID is not set for PDF OCR.');
+                    return { statusCode: 500, body: JSON.stringify({ message: 'Не настроен GOOGLE_CLOUD_PROJECT_ID для OCR PDF.' }) };
+                }
+                const bucketName = `${GOOGLE_CLOUD_PROJECT_ID}-ocr-temp`; // Имя бакета для временных файлов
+                const filePath = `temp-ocr/${Date.now()}-${fileName}`;
+                const file = storageClient.bucket(bucketName).file(filePath);
+
+                await file.save(fileBuffer, {
+                    metadata: { contentType: fileMimeType }
+                });
+                console.log(`File ${filePath} uploaded to ${bucketName}.`);
+
+                const gcsSourceUri = `gs://${bucketName}/${filePath}`;
+                const gcsDestinationUri = `gs://${bucketName}/results/${Date.now()}-output.json`;
+
+                const [operation] = await visionClient.asyncBatchAnnotateFiles({
+                    requests: [
+                        {
+                            inputConfig: {
+                                gcsSource: { uri: gcsSourceUri },
+                                mimeType: 'application/pdf',
+                            },
+                            features: [{ type: 'DOCUMENT_TEXT_DETECTION' }],
+                            outputConfig: {
+                                gcsDestination: { uri: gcsDestinationUri },
+                                batchSize: 2, // Количество страниц для обработки в одном запросе
+                            },
+                        },
+                    ],
+                });
+
+                const [filesResponse] = await operation.promise();
+                const destinationUri = filesResponse.responses[0].outputConfig.gcsDestination.uri;
+                console.log('OCR results saved to:', destinationUri);
+
+                // Чтение результатов из GCS
+                const match = destinationUri.match(/gs:\/\/([a-z0-9\._-]+)\/(.*)/i);
+                if (!match) {
+                    console.error('Invalid GCS destination URI:', destinationUri);
+                    return { statusCode: 500, body: JSON.stringify({ message: 'Ошибка при получении URI результатов OCR.' }) };
+                }
+                const outputBucketName = match[1];
+                const outputPrefix = match[2];
+
+                const [files] = await storageClient.bucket(outputBucketName).getFiles({ prefix: outputPrefix });
+                let fullText = '';
+                for (const file of files) {
+                    const contents = await file.download();
+                    const json = JSON.parse(contents.toString());
+                    for (const response of json.responses) {
+                        fullText += response.fullTextAnnotation.text;
+                    }
+                }
+                extractedText = fullText;
+                console.log('Extracted Text (from Google Vision PDF OCR):', extractedText.substring(0, Math.min(extractedText.length, 100)) + '...');
+
+                // Удаление временных файлов
+                await storageClient.bucket(bucketName).file(filePath).delete();
+                for (const file of files) {
+                    await file.delete();
+                }
+                console.log('Temporary files deleted from GCS.');
+
             } else if (fileMimeType === 'text/plain') {
                 extractedText = fileBuffer.toString('utf8');
                 console.log('Extracted Text (from text/plain file):', extractedText.substring(0, Math.min(extractedText.length, 100)) + '...');
             } else {
                 console.error('Unsupported file type for OCR/conversion:', fileMimeType);
                 return { statusCode: 400, body: JSON.stringify({ message: 'Неподдерживаемый тип файла для OCR/конвертации.' }) };
-            }
-
-            if (ocrEndpoint) {
-                console.log('OCR Endpoint:', ocrEndpoint);
-                const form = new FormData(); // Используем экземпляр form-data
-                form.append('inputFile', fileBuffer, {
-                    filename: fileName,
-                    contentType: fileMimeType
-                });
-
-                const ocrResponse = await fetch(ocrEndpoint, {
-                    method: 'POST',
-                    headers: {
-                        'Apikey': CLOUDMERSIVE_API_KEY,
-                        ...form.getHeaders() // Получаем заголовки из form-data
-                    },
-                    body: form // Передаем экземпляр form-data в body
-                });
-
-                if (!ocrResponse.ok) {
-                    const errorText = await ocrResponse.text();
-                    console.error('Cloudmersive OCR/Convert Error:', ocrResponse.status, errorText);
-                    console.error('Cloudmersive OCR/Convert Full Error Response:', errorText); // Добавлено логирование полного ответа
-                    // Fallback to Google Cloud Vision API for PDF is temporarily disabled
-                    // due to missing @google-cloud/storage dependency
-                    console.log('Fallback to Google Cloud Vision API for PDF OCR is disabled. Please install @google-cloud/storage to enable this feature.');
-                    return {
-                        statusCode: 500,
-                        body: JSON.stringify({ message: 'Резервное распознавание текста из PDF через Google Cloud Vision API отключено.' })
-                    };
-                } else {
-                    const ocrData = await ocrResponse.json();
-                    console.log('Cloudmersive OCR/Convert Raw Response:', JSON.stringify(ocrData).substring(0, Math.min(JSON.stringify(ocrData).length, 200)) + '...');
-                    extractedText = ocrData.TextResult || ocrData.TextContent;
-                    console.log('Extracted Text (from OCR/Convert):', extractedText.substring(0, Math.min(extractedText.length, 100)) + '...');
-                    console.log('DEBUG: Extracted text length after OCR/Convert:', extractedText.length); // Добавлено логирование
-                }
             }
         } else if (!fileBuffer && (inputType === 'file' || inputType === 'image')) {
             console.error('Document part is missing for file/image inputType.');
