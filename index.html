@@ -18,13 +18,26 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             min-height: 100vh;
             color: #333;
-            /* Стили для фона будут добавлены позже */
+            overflow: hidden; /* Добавлено для скрытия полос прокрутки */
+        }
+
+        .background {
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(ellipse at center, #16213e 0%, #1a1a2e 70%, #0f0f23 100%);
+            position: fixed; /* Фон фиксирован */
+            top: 0;
+            left: 0;
+            overflow: hidden;
+            z-index: -1; /* Фон находится под основным контентом */
         }
 
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
+            position: relative; /* Контейнер поверх фона */
+            z-index: 10; /* Контейнер поверх фона */
         }
 
         .header {
@@ -305,6 +318,171 @@
             gap: 15px;
             flex-wrap: wrap;
             justify-content: center;
+        }
+
+        /* Стили для нейронной сети и анимации */
+        .neural-network {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .node {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #00d4ff;
+            border-radius: 50%;
+            box-shadow: 0 0 15px #00d4ff, 0 0 30px #00d4ff40;
+            animation: pulse 3s infinite ease-in-out;
+        }
+
+        .node.large {
+            width: 12px;
+            height: 12px;
+            background: #00ff88;
+            box-shadow: 0 0 20px #00ff88, 0 0 40px #00ff8840;
+        }
+
+        .node.small {
+            width: 4px;
+            height: 4px;
+            background: #ffffff;
+            box-shadow: 0 0 10px #ffffff60;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.3); opacity: 1; }
+        }
+
+        .connection {
+            position: absolute;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #00d4ff40, transparent);
+            transform-origin: left center;
+            animation: dataFlow 4s infinite linear;
+        }
+
+        @keyframes dataFlow {
+            0% { opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        .text-fragment {
+            position: absolute;
+            color: rgba(255, 255, 255, 0.1);
+            font-size: 14px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            animation: textFloat 8s infinite linear;
+            pointer-events: none;
+        }
+
+        @keyframes textFloat {
+            0% { 
+                transform: translateX(-100px) translateY(0) rotate(0deg);
+                opacity: 0;
+            }
+            10% { opacity: 0.3; }
+            90% { opacity: 0.1; }
+            100% { 
+                transform: translateX(calc(100vw + 100px)) translateY(-50px) rotate(5deg);
+                opacity: 0;
+            }
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: #ffffff;
+            border-radius: 50%;
+            animation: particleFloat 6s infinite ease-in-out;
+        }
+
+        @keyframes particleFloat {
+            0%, 100% { 
+                transform: translateY(0) scale(0);
+                opacity: 0;
+            }
+            50% { 
+                transform: translateY(-100px) scale(1);
+                opacity: 0.6;
+            }
+        }
+
+        .wave {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 200%;
+            height: 200px;
+            background: linear-gradient(45deg, transparent, #00d4ff08, transparent);
+            border-radius: 50%;
+            animation: waveMotion 12s infinite ease-in-out;
+        }
+
+        @keyframes waveMotion {
+            0%, 100% { transform: translateX(-50%) translateY(50px) rotate(0deg); }
+            50% { transform: translateX(-50%) translateY(-50px) rotate(2deg); }
+        }
+
+        .code-snippet {
+            position: absolute;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: rgba(0, 255, 136, 0.15);
+            animation: codeDissolve 10s infinite linear;
+            pointer-events: none;
+        }
+
+        @keyframes codeDissolve {
+            0% { 
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            20% { opacity: 0.3; }
+            80% { opacity: 0.1; }
+            100% { 
+                transform: translateY(-100px) rotate(-10deg);
+                opacity: 0;
+            }
+        }
+
+        .glow-orb {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle, #00d4ff20, transparent);
+            animation: orbFloat 15s infinite ease-in-out;
+        }
+
+        @keyframes orbFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(100px, -50px) scale(1.2); }
+            50% { transform: translate(-50px, -100px) scale(0.8); }
+            75% { transform: translate(-100px, 50px) scale(1.1); }
+        }
+
+        .center-focus {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 300px;
+            height: 300px;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(circle, #00d4ff08, transparent);
+            border-radius: 50%;
+            animation: centerPulse 8s infinite ease-in-out;
+        }
+
+        @keyframes centerPulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.3; }
+            50% { transform: translate(-50%, -50%) scale(1.5); opacity: 0.1; }
         }
 
         .export-btn {
@@ -966,6 +1144,100 @@
             // Можно заменить на более красивую реализацию уведомлений
             alert(message);
         }
+
+        // JavaScript для анимации фона
+        function createNodes() {
+            const network = document.getElementById('network');
+            const nodeCount = 25;
+            
+            for (let i = 0; i < nodeCount; i++) {
+                const node = document.createElement('div');
+                const size = Math.random();
+                
+                if (size > 0.8) {
+                    node.className = 'node large';
+                } else if (size < 0.3) {
+                    node.className = 'node small';
+                } else {
+                    node.className = 'node';
+                }
+                
+                node.style.left = Math.random() * 100 + '%';
+                node.style.top = Math.random() * 100 + '%';
+                node.style.animationDelay = Math.random() * 3 + 's';
+                
+                network.appendChild(node);
+            }
+        }
+
+        function createConnections() {
+            const network = document.getElementById('network');
+            const nodes = network.querySelectorAll('.node');
+            
+            nodes.forEach((node, index) => {
+                if (Math.random() > 0.3) {
+                    const connection = document.createElement('div');
+                    connection.className = 'connection';
+                    
+                    const nodeRect = node.getBoundingClientRect();
+                    const targetNode = nodes[Math.floor(Math.random() * nodes.length)];
+                    if (targetNode && targetNode !== node) {
+                        const targetRect = targetNode.getBoundingClientRect();
+                        
+                        const angle = Math.atan2(
+                            targetRect.top - nodeRect.top,
+                            targetRect.left - nodeRect.left
+                        ) * 180 / Math.PI;
+                        
+                        const distance = Math.sqrt(
+                            Math.pow(targetRect.left - nodeRect.left, 2) +
+                            Math.pow(targetRect.top - nodeRect.top, 2)
+                        );
+                        
+                        connection.style.left = node.style.left;
+                        connection.style.top = node.style.top;
+                        connection.style.width = distance + 'px';
+                        connection.style.transform = `rotate(${angle}deg)`;
+                        connection.style.animationDelay = Math.random() * 4 + 's';
+                        
+                        network.appendChild(connection);
+                    }
+                }
+            });
+        }
+
+        function createParticles() {
+            const particleCount = 30;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 6 + 's';
+                
+                document.querySelector('.background').appendChild(particle);
+            }
+        }
+
+        // Initialize the visualization
+        createNodes();
+        setTimeout(createConnections, 100);
+        createParticles();
+
+        // Add some interactive elements
+        document.addEventListener('mousemove', (e) => {
+            const mouseX = e.clientX / window.innerWidth;
+            const mouseY = e.clientY / window.innerHeight;
+            
+            document.querySelectorAll('.node').forEach((node, index) => {
+                const intensity = 0.1;
+                const offsetX = (mouseX - 0.5) * intensity * (index % 2 ? 1 : -1);
+                const offsetY = (mouseY - 0.5) * intensity * (index % 3 ? 1 : -1);
+                
+                node.style.transform = `translate(${offsetX * 20}px, ${offsetY * 20}px)`;
+            });
+        });
     </script>
 </body>
 </html>
