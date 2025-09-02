@@ -1242,8 +1242,12 @@
         // Вспомогательные функции
         function showLoading(show) {
             document.getElementById('loading').style.display = show ? 'block' : 'none';
-            document.getElementById('results').style.display = show ? 'none' : 'none'; // Скрываем все результаты при загрузке
-            document.getElementById('translatedTextCard').style.display = show ? 'none' : 'none'; // Скрываем переведенный текст при загрузке
+            // При завершении загрузки (show = false) не скрываем блоки результатов,
+            // так как их отображением занимается функция displayResults().
+            if (show) {
+                document.getElementById('results').style.display = 'none';
+                document.getElementById('translatedTextCard').style.display = 'none';
+            }
         }
 
         function updateLoadingText(text) {
