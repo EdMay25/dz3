@@ -161,7 +161,7 @@
         }
 
         .analyze-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #02c6f0; /* Цвет кнопки */
             color: white;
             border: none;
             padding: 16px 40px;
@@ -172,6 +172,11 @@
             transition: all 0.3s ease;
             width: 100%;
             margin-bottom: 30px;
+            display: block; /* Делаем кнопку блочным элементом */
+            margin-left: auto; /* Центрируем кнопку */
+            margin-right: auto; /* Центрируем кнопку */
+            max-width: 300px; /* Ограничиваем ширину для центрирования */
+            box-shadow: 0 0 15px #02c6f0, 0 0 30px rgba(2, 198, 240, 0.4); /* Неоновое свечение */
         }
 
         .analyze-btn:hover {
@@ -506,51 +511,11 @@
             color: white;
         }
 
-        /* Вариант 1: Неоновое свечение */
-        .analyze-btn.neon-glow {
-            background: transparent;
-            border: 2px solid #00d4ff;
-            color: #00d4ff;
-            box-shadow: 0 0 10px #00d4ff, 0 0 20px #00d4ff40;
-            transition: all 0.3s ease;
-        }
-
-        .analyze-btn.neon-glow:hover {
-            background: rgba(0, 212, 255, 0.1);
-            box-shadow: 0 0 15px #00d4ff, 0 0 30px #00d4ff80;
+        /* Стили для кнопки "Получить" */
+        .analyze-btn:hover {
+            background: rgba(2, 198, 240, 0.8); /* Более темный оттенок при наведении */
+            box-shadow: 0 0 20px #02c6f0, 0 0 40px rgba(2, 198, 240, 0.6);
             transform: translateY(-2px);
-        }
-
-        /* Вариант 2: Глубокий градиент */
-        .analyze-btn.deep-gradient {
-            background: linear-gradient(135deg, #1a1a2e 0%, #0f0f23 100%);
-            border: 1px solid #667eea;
-            color: #e0e0e0;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.4);
-        }
-
-        .analyze-btn.deep-gradient:hover {
-            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 100%);
-            border-color: #764ba2;
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
-        }
-
-        /* Вариант 3: Стеклянный минимализм */
-        .analyze-btn.glass-minimal {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        }
-
-        .analyze-btn.glass-minimal:hover {
-            background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.5);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(0,0,0,0.3);
         }
 
         /* Dropdown styles */
@@ -673,8 +638,6 @@
             <div class="input-section">
                 <div class="tabs">
                     <button type="button" class="tab active" onclick="switchTab(event, 'text')">Ввод текста</button>
-                    <button type="button" class="tab" onclick="switchTab(event, 'file')">Загрузка файла</button>
-                    <button type="button" class="tab" onclick="switchTab(event, 'ocr')">OCR сканирование</button>
                 </div>
 
                 <div class="tab-content active" id="text-tab">
@@ -685,29 +648,6 @@
                     ></textarea>
                 </div>
 
-                <div class="tab-content" id="file-tab">
-                    <div class="file-upload" onclick="document.getElementById('fileInput').click()">
-                        <div class="upload-icon">Загрузите файл</div>
-                        <h3 id="fileLabel">Загрузите текстовый файл</h3>
-                        <p>Поддерживаются форматы: .txt, .docx, .pdf</p>
-                        <input type="file" id="fileInput" accept=".txt, .docx, .pdf, application/pdf, application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="hidden-file-input" onchange="handleFileUpload(event)">
-                    </div>
-                </div>
-
-                <div class="tab-content" id="ocr-tab">
-                    <div class="file-upload" onclick="document.getElementById('imageInput').click()">
-                        <div id="imagePreviewContainer" class="image-preview-container">
-                            <img id="imagePreview" class="image-preview" src="#" alt="Image Preview">
-                        </div>
-                        <div class="upload-icon">Загрузите изображение</div>
-                        <h3 id="imageLabel">Загрузите изображение для OCR</h3>
-                        <p>Поддерживаются форматы: .jpg, .png, .gif, .bmp</p>
-                        <input type="file" id="imageInput" accept="image/*" class="hidden-file-input" onchange="handleOCR(event)">
-                    </div>
-                    <div class="progress-bar" id="ocrProgress">
-                        <div class="progress-fill" id="ocrProgressFill"></div>
-                    </div>
-                </div>
 
                 <div class="language-select">
                     <label for="sourceLanguage">Язык исходного текста:</label>
@@ -743,8 +683,8 @@
                     </select>
                 </div>
 
-                <button type="button" class="analyze-btn glass-minimal" id="analyzeBtn" onclick="analyzeText()">
-                    Перевести и анализировать
+                <button type="button" class="analyze-btn" id="analyzeBtn" onclick="analyzeText()">
+                    Получить
                 </button>
 
                 <div class="result-card" id="translatedTextCard" style="display: none;">
@@ -809,7 +749,7 @@
             emotions: []
         };
 
-        // Переключение табов
+        // Переключение табов (упрощено, так как осталась только одна вкладка)
         function switchTab(event, tabName) {
             // Убираем активный класс со всех табов и контента
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
@@ -820,83 +760,18 @@
             document.getElementById(tabName + '-tab').style.display = 'block';
         }
 
-        // Обработка загрузки текстовых файлов
-        function handleFileUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            document.getElementById('fileLabel').textContent = `Выбран файл: ${file.name}`;
-
-            // Для .txt файлов, мы можем показать содержимое. Для остальных - нет.
-            if (file.type === 'text/plain') {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    document.getElementById('textInput').value = e.target.result;
-                };
-                reader.readAsText(file);
-            } else {
-                // Для .docx и .pdf, просто подтверждаем выбор файла.
-                // Бэкенд обработает их содержимое.
-                document.getElementById('textInput').value = `Файл "${file.name}" готов к отправке на сервер для анализа.`;
-            }
-        }
-
-        // Обработка загрузки изображений для OCR
-        function handleOCR(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            // Показываем превью изображения
-            const previewContainer = document.getElementById('imagePreviewContainer');
-            const preview = document.getElementById('imagePreview');
-            const reader = new FileReader();
-
-            reader.onload = function(e) {
-                preview.src = e.target.result;
-                previewContainer.style.display = 'block';
-                document.getElementById('imageLabel').textContent = `Выбрано изображение: ${file.name}`;
-            }
-            reader.readAsDataURL(file);
-
-            // Очищаем текстовое поле, если там что-то было
-            document.getElementById('textInput').value = '';
-        }
-
-        // Основная функция анализа
+        // Основная функция анализа (обновлена для обработки только текстового ввода)
         async function analyzeText() {
             const textInput = document.getElementById('textInput');
-            const fileInput = document.getElementById('fileInput');
-            const imageInput = document.getElementById('imageInput');
             const sourceLanguage = document.getElementById('sourceLanguage').value;
             const targetLanguage = document.getElementById('targetLanguage').value;
 
-            let inputData = null;
-            let inputType = '';
+            const inputData = textInput.value.trim();
+            const inputType = 'text'; // Всегда 'text', так как другие опции удалены
 
-            const activeTab = document.querySelector('.tab.active');
-            const activeTabText = activeTab.textContent;
-
-            if (activeTabText.includes('Ввод текста')) {
-                inputData = textInput.value.trim();
-                inputType = 'text';
-                if (!inputData) {
-                    showNotification('Пожалуйста, введите текст для анализа', 'warning');
-                    return;
-                }
-            } else if (activeTabText.includes('Загрузка файла')) {
-                inputData = fileInput.files[0];
-                inputType = 'file';
-                if (!inputData) {
-                    showNotification('Пожалуйста, выберите текстовый файл для анализа', 'warning');
-                    return;
-                }
-            } else if (activeTabText.includes('OCR сканирование')) {
-                inputData = imageInput.files[0];
-                inputType = 'image';
-                if (!inputData) {
-                    showNotification('Пожалуйста, выберите изображение для OCR', 'warning');
-                    return;
-                }
+            if (!inputData) {
+                showNotification('Пожалуйста, введите текст для анализа', 'warning');
+                return;
             }
 
             showLoading(true);
@@ -907,24 +782,14 @@
             console.log('DEBUG: Input Type:', inputType);
             console.log('DEBUG: Source Language:', sourceLanguage);
             console.log('DEBUG: Target Language:', targetLanguage);
-            if (inputType === 'text') {
-                console.log('DEBUG: Input Text (first 100 chars):', inputData.substring(0, 100));
-            } else if (inputType === 'file' || inputType === 'image') {
-                console.log('DEBUG: File Name:', inputData.name);
-                console.log('DEBUG: File Type:', inputData.type);
-            }
+            console.log('DEBUG: Input Text (first 100 chars):', inputData.substring(0, 100));
 
             try {
                 const formData = new FormData();
                 formData.append('sourceLanguage', sourceLanguage);
                 formData.append('targetLanguage', targetLanguage);
                 formData.append('inputType', inputType);
-
-                if (inputType === 'text') {
-                    formData.append('text', inputData);
-                } else {
-                    formData.append('document', inputData);
-                }
+                formData.append('text', inputData); // Всегда отправляем текст
 
                 const response = await fetch('/.netlify/functions/analyze', {
                     method: 'POST',
