@@ -42,7 +42,7 @@ exports.handler = async (event, context) => {
                 file.on('end', () => {
                     fileBuffer = Buffer.concat(chunks);
                     fileName = filename;
-                    fileMimeType = mimetype;
+                    fileMimeType = mimetype; // Исправлено: сохраняем mimetype файла
                 });
             });
 
