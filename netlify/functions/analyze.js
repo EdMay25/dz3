@@ -37,6 +37,8 @@ exports.handler = async (event, context) => {
 
             busboy.on('file', (fieldname, file, filename, encoding, mimetype) => {
                 console.log(`File [${fieldname}]: filename=${filename}, mimetype=${mimetype}`);
+                console.log(`DEBUG: busboy.on('file') - fieldname: ${fieldname}, filename: ${JSON.stringify(filename)}, encoding: ${encoding}, mimetype: ${mimetype}`);
+                console.log(`DEBUG: Type of filename: ${typeof filename}, Type of mimetype: ${typeof mimetype}`);
                 const chunks = [];
                 file.on('data', data => chunks.push(data));
                 file.on('end', () => {
