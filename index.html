@@ -91,9 +91,10 @@
         }
 
         .tab.active {
-            background: #667eea;
+            background: #01f383; /* Цвет кнопки */
             color: white;
-            box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 0 15px #01f383, 0 0 30px rgba(1, 243, 131, 0.4); /* Неоновое свечение */
+            border-radius: 12px; /* Применяем border-radius от analyze-btn */
         }
 
         .tab-content {
@@ -161,7 +162,7 @@
         }
 
         .analyze-btn {
-            background: #02c6f0; /* Цвет кнопки */
+            background: #01f383; /* Цвет кнопки */
             color: white;
             border: none;
             padding: 16px 40px;
@@ -176,12 +177,12 @@
             margin-left: auto; /* Центрируем кнопку */
             margin-right: auto; /* Центрируем кнопку */
             max-width: 300px; /* Ограничиваем ширину для центрирования */
-            box-shadow: 0 0 15px #02c6f0, 0 0 30px rgba(2, 198, 240, 0.4); /* Неоновое свечение */
+            box-shadow: 0 0 15px #01f383, 0 0 30px rgba(1, 243, 131, 0.4); /* Неоновое свечение */
         }
 
         .analyze-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 10px 20px rgba(1, 243, 131, 0.3);
         }
 
         .analyze-btn:disabled {
@@ -513,8 +514,8 @@
 
         /* Стили для кнопки "Получить" */
         .analyze-btn:hover {
-            background: rgba(2, 198, 240, 0.8); /* Более темный оттенок при наведении */
-            box-shadow: 0 0 20px #02c6f0, 0 0 40px rgba(2, 198, 240, 0.6);
+            background: rgba(1, 243, 131, 0.8); /* Более темный оттенок при наведении */
+            box-shadow: 0 0 20px #01f383, 0 0 40px rgba(1, 243, 131, 0.6);
             transform: translateY(-2px);
         }
 
