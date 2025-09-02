@@ -70,8 +70,10 @@ exports.handler = async (event, context) => {
         console.log('Extracted Text (from text input):', extractedText.substring(0, Math.min(extractedText.length, 100)) + '...');
         console.log('File Name:', fileName);
         console.log('File MIME Type:', fileMimeType);
+        console.log('DEBUG: fileBuffer exists:', !!fileBuffer); // Добавлено логирование
 
         if ((inputType === 'file' || inputType === 'image') && fileBuffer) {
+            console.log('DEBUG: Entering file/image processing block.'); // Добавлено логирование
             let ocrEndpoint = '';
             if (fileMimeType.startsWith('image/')) {
                 ocrEndpoint = 'https://api.cloudmersive.com/ocr/image/toText';
@@ -106,7 +108,7 @@ exports.handler = async (event, context) => {
                 if (!ocrResponse.ok) {
                     const errorText = await ocrResponse.text();
                     console.error('Cloudmersive OCR/Convert Error:', ocrResponse.status, errorText);
-
+                    console.error('Cloudmersive OCR/Convert Full Error Response:', errorText); // Добавлено логирование полного ответа
                     // Fallback to Google Cloud Vision API for PDF is temporarily disabled
                     // due to missing @google-cloud/storage dependency
                     console.log('Fallback to Google Cloud Vision API for PDF OCR is disabled. Please install @google-cloud/storage to enable this feature.');
@@ -119,6 +121,7 @@ exports.handler = async (event, context) => {
                     console.log('Cloudmersive OCR/Convert Raw Response:', JSON.stringify(ocrData).substring(0, Math.min(JSON.stringify(ocrData).length, 200)) + '...');
                     extractedText = ocrData.TextResult || ocrData.TextContent;
                     console.log('Extracted Text (from OCR/Convert):', extractedText.substring(0, Math.min(extractedText.length, 100)) + '...');
+                    console.log('DEBUG: Extracted text length after OCR/Convert:', extractedText.length); // Добавлено логирование
                 }
             }
         } else if (!fileBuffer && (inputType === 'file' || inputType === 'image')) {
@@ -138,12 +141,15 @@ exports.handler = async (event, context) => {
             };
         }
 
-        console.log('Text before Google Translate (English target):', extractedText.substring(0, 100) + '...');
+        console.log('Text before Google Translate (English target):', extractedText.substring(0, Math.min(extractedText.length, 100)) + '...');
+        console.log('DEBUG: Extracted text length before Google Translate:', extractedText.length); // Добавлено логирование
 
         // 2. Перевод текста с Google Translate
         console.log('Starting Google Translate API call...');
         console.log('Google Translate API Key available:', !!GOOGLE_TRANSLATE_API_KEY);
-        console.log('Text to translate (first 100 chars):', extractedText.substring(0, 100) + '...');
+        console.log('Text to translate (first 100 chars):', extractedText.substring(0, Math.min(extractedText.length, 100)) + '...');
+        console.log('DEBUG: Source Language for Google Translate:', sourceLanguage); // Добавлено логирование
+        console.log('DEBUG: Target Language for Google Translate (first pass): en'); // Добавлено логирование
 
         const translateResponse = await fetch(`https://translation.googleapis.com/language/translate/v2?key=${GOOGLE_TRANSLATE_API_KEY}`, {
             method: 'POST',
@@ -227,18 +233,22 @@ exports.handler = async (event, context) => {
             body: JSON.stringify({ inputs: translatedTextEnglish })
         });
 
-        console.log('Hugging Face Request Body:', JSON.stringify({ inputs: translatedTextEnglish }).substring(0, 100) + '...'); // Log truncated body
+        console.log('Hugging Face Request Body:', JSON.stringify({ inputs: translatedTextEnglish }).substring(0, Math.min(JSON.stringify({ inputs: translatedTextEnglish }).length, 100)) + '...'); // Log truncated body
+        console.log('DEBUG: Translated text length for Hugging Face:', translatedTextEnglish.length); // Добавлено логирование
 
         if (!sentimentResponse.ok) {
             const errorText = await sentimentResponse.text();
             console.error('Hugging Face Sentiment Error:', sentimentResponse.status, errorText);
+            console.error('Hugging Face Sentiment Full Error Response:', errorText); // Добавлено логирование полного ответа
             return {
                 statusCode: sentimentResponse.status,
                 body: JSON.stringify({ message: 'Ошибка при анализе тональности текста.', details: errorText })
             };
         }
         const sentimentData = await sentimentResponse.json();
-        console.log('Hugging Face Raw Response:', JSON.stringify(sentimentData).substring(0, 500) + '...'); // Log raw response, truncated
+        console.log('Hugging Face Raw Response:', JSON.stringify(sentimentData).substring(0, Math.min(JSON.stringify(sentimentData).length, 500)) + '...'); // Log raw response, truncated
+        console.log('DEBUG: Hugging Face response type:', typeof sentimentData); // Добавлено логирование
+        console.log('DEBUG: Hugging Face response is array:', Array.isArray(sentimentData)); // Добавлено логирование
 
         let sentimentAnalysisEnglish = {
             SentimentClassification: "Neutral", // Default to Neutral
@@ -291,6 +301,10 @@ exports.handler = async (event, context) => {
         let finalEmotionsAnalysis = emotionsAnalysisEnglish;
 
         if (targetLanguage !== 'en') {
+            console.log('DEBUG: Starting final Google Translate API call (back to target language)...'); // Добавлено логирование
+            console.log('DEBUG: Text to translate back (first 100 chars):', translatedTextEnglish.substring(0, Math.min(translatedTextEnglish.length, 100)) + '...'); // Добавлено логирование
+            console.log('DEBUG: Target Language for final Google Translate:', targetLanguage); // Добавлено логирование
+
             const finalTranslateTextResponse = await fetch(`https://translation.googleapis.com/language/translate/v2?key=${GOOGLE_TRANSLATE_API_KEY}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -299,8 +313,10 @@ exports.handler = async (event, context) => {
             if (finalTranslateTextResponse.ok) {
                 const finalTranslateTextData = await finalTranslateTextResponse.json();
                 finalTranslatedText = finalTranslateTextData.data.translations[0].translatedText;
+                console.log('DEBUG: Final translated text (first 100 chars):', finalTranslatedText.substring(0, Math.min(finalTranslatedText.length, 100)) + '...'); // Добавлено логирование
             } else {
-                console.warn('Failed to translate final text to target language.');
+                const errorText = await finalTranslateTextResponse.text(); // Добавлено логирование ошибки
+                console.warn('Failed to translate final text to target language:', errorText); // Обновлено логирование
             }
 
             const sentimentLabelMap = {
