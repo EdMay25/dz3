@@ -16,9 +16,9 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             color: #333;
+            /* Стили для фона будут добавлены позже */
         }
 
         .container {
@@ -360,6 +360,37 @@
     </style>
 </head>
 <body>
+    <div class="background">
+        <div class="center-focus"></div>
+        
+        <div class="wave"></div>
+        
+        <div class="glow-orb" style="width: 200px; height: 200px; top: 20%; left: 10%;"></div>
+        <div class="glow-orb" style="width: 150px; height: 150px; top: 70%; left: 80%;"></div>
+        <div class="glow-orb" style="width: 100px; height: 100px; top: 30%; left: 70%;"></div>
+        
+        <div class="neural-network" id="network"></div>
+        
+        <div class="text-fragment" style="top: 20%; animation-delay: 0s;">natural language processing</div>
+        <div class="text-fragment" style="top: 40%; animation-delay: 2s;">machine learning</div>
+        <div class="text-fragment" style="top: 60%; animation-delay: 4s;">обработка языка</div>
+        <div class="text-fragment" style="top: 80%; animation-delay: 6s;">artificial intelligence</div>
+        
+        <div class="code-snippet" style="left: 10%; animation-delay: 1s;">
+            def process_text(input):<br>
+            &nbsp;&nbsp;return nlp.analyze(input)
+        </div>
+        <div class="code-snippet" style="left: 60%; animation-delay: 5s;">
+            model.predict(tokens)<br>
+            confidence: 0.95
+        </div>
+        <div class="code-snippet" style="left: 30%; animation-delay: 8s;">
+            {<br>
+            &nbsp;"result": "processed",<br>
+            &nbsp;"accuracy": 98.7%<br>
+            }
+        </div>
+    </div>
     <div class="container">
         <div class="header">
             <h1>Страдания Pro TextAnalyze</h1>
